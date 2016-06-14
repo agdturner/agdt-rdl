@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package uk.ac.leeds.ccg.andyt.rdl.test;
+package uk.ac.leeds.ccg.andyt.rdl.conversion;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
