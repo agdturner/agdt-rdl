@@ -28,6 +28,7 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import uk.ac.leeds.ccg.andyt.generic.io.Generic_StaticIO;
 
 /**
+ * Class adapted from: http://svn.apache.org/repos/asf/poi/trunk/src/examples/src/org/apache/poi/ss/examples/ToCSV.java
  * Demonstrates <em>one</em> way to convert an Excel spreadsheet into a CSV
  * file. This class makes the following assumptions;
  * <list>
