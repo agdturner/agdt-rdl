@@ -10,6 +10,9 @@
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
         <generic.version>1.0-SNAPSHOT</generic.version>
+        <!--
+        <maven.project.info.reports.plugin.version>2.9</maven.project.info.reports.plugin.version>
+        -->
     </properties>
     
     <dependencies>
@@ -25,6 +28,14 @@
             <artifactId>generic</artifactId>
             <version>${generic.version}</version>
         </dependency>
+        <!--
+        <dependency>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-project-info-reports-plugin</artifactId>
+            <version>$(maven.project.info.reports.plugin.version)</version>
+            <type>maven-plugin</type>
+        </dependency>
+        -->
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
