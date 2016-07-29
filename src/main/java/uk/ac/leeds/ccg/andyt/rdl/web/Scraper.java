@@ -36,6 +36,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -62,6 +63,9 @@ public class Scraper {
 
     File directory;
     static File sharedLogFile;
+    
+    boolean useOnlyCachedFiles;
+            String s_filter;
     String s_HipertyTipperty;
     String s_Resolver;
     String s_UniversityOfLeedsDataCiteDOIPrefix;
@@ -136,26 +140,50 @@ public class Scraper {
      * @param args
      */
     public void run(String[] args) {
+        startTime = System.currentTimeMillis();
+        double permittedConnectionsPerHour = 20000;
+        permittedConnectionRate = permittedConnectionsPerHour / Generic_Time.MilliSecondsInHour;
+        connectionCount = 0;
+        sharedLogFile = new File(
+                args[0],
+                "log");
         try {
-            startTime = System.currentTimeMillis();
-            double permittedConnectionsPerHour = 20000;
-            permittedConnectionRate = permittedConnectionsPerHour / Generic_Time.MilliSecondsInHour;
-            connectionCount = 0;
-            sharedLogFile = new File(
-                    args[0],
-                    "log");
             getSharedLogFile().createNewFile();
-            getSharedLogFile().deleteOnExit();
-            directory = new File(args[0]);
-            outDir = new File(
-                    directory,
-                    "out");
-            outDir.mkdirs();
-            s_HipertyTipperty = "http://";
-            s_Resolver = "doi.org";
-            s_UniversityOfLeedsDataCiteDOIPrefix = "10.5518";
+        } catch (IOException ex) {
+            Logger.getLogger(Scraper.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        getSharedLogFile().deleteOnExit();
+        directory = new File(args[0]);
+        outDir = new File(
+                directory,
+                "out");
+        outDir.mkdirs();
+        s_HipertyTipperty = "http://";
+        s_Resolver = "doi.org";
+        s_UniversityOfLeedsDataCiteDOIPrefix = "10.5518";
+
+            s_filter = "archive.researchdata.leeds.ac.uk";
+            
+        // Options
+        // Either run a test or the full monty.
+        // <runTest>
+        useOnlyCachedFiles = true; // This run will only use files already pulled from the web.
+//        useOnlyCachedFiles = false; // This will pull files from the web and check if they are different from before and use the most recent file.
+        runTest(useOnlyCachedFiles);
+        // </runTest>
+        // <fullMonty>
+//        useOnlyCachedFiles = true; // This run will only use files already pulled from the web.
+////        useOnlyCachedFiles = false; // This will pull files from the web and check if they are different from before and use the most recent file.
+//        int n; // n is the number of datasets in our repository.
+//        n = 47;
+//        runSearch(n, useOnlyCachedFiles);
+        // </fullMonty>
+    }
+
+    public void runTest(boolean useOnlyCachedFiles) {
+        try {
+            // i is the index/number of the dataset to test
             int i;
-            //for (i = 1; i < 47; i++) {
             i = 7;
             s_DOISuffix = "" + i;
             s_DOI = s_UniversityOfLeedsDataCiteDOIPrefix + s_backslash + s_DOISuffix;
@@ -190,7 +218,7 @@ public class Scraper {
             if (!searchResult.isEmpty()) {
                 filterSearchResult(searchResult);
                 HashMap<String, String> documents;
-                documents = getDocuments(searchResult);
+                documents = getDocuments(searchResult, useOnlyCachedFiles);
                 boolean restart = false;
                 getData(restart);
             } else {
@@ -204,6 +232,62 @@ public class Scraper {
         }
     }
 
+    public void runSearch(int n, boolean useOnlyCachedFiles) {
+        try {
+            // i is the index/number of the dataset to test
+            for (int i = 1; i < 47; i++) {
+                s_DOISuffix = "" + i;
+                s_DOI = s_UniversityOfLeedsDataCiteDOIPrefix + s_backslash + s_DOISuffix;
+                s_DOIWithResolver = s_Resolver + s_backslash + s_DOI;
+
+                //s_URL = "https://www.google.co.uk/webhp?sourceid=chrome-instant&ion=1&espv=2&ie=UTF-8#q=%22doi.org%2F" + s_UniversityOfLeedsDataCiteDOIPrefix + "%2F" + s_DOISuffix + "%22";
+                //s_URL = "https://www.google.co.uk/webhp?sourceid=chrome-instant&ion=1&espv=2&ie=UTF-8#q=%22doi.org%2F" + s_UniversityOfLeedsDataCiteDOIPrefix + "%2F" + s_DOISuffix + "%22";
+                search = "\"" + s_DOIWithResolver + "\"";
+
+                HashMap<String, String> searchResult;
+                searchResult = getSearchResult(); // This is for a real search, currently just testing.
+                searchResult = new HashMap<String, String>();
+                String testurl;
+                testurl = s_HipertyTipperty + "eprints.whiterose.ac.uk/87869/1/Brockway%20et%20al%202015%20China%20energy%20efficiency%20and%20decomposition.pdf";
+                String testtitle;
+                testtitle = "Download - White Rose Research Online";
+                searchResult.put(testurl, testtitle);
+
+                File pdfFile;
+                pdfFile = new File(outDir,
+                        "test.pdf");
+                //String s = formatPDF(pdfFile);
+
+                FileInputStream fis;
+                fis = new FileInputStream(pdfFile);
+                ParsePDF.parse(
+                        pdfFile,
+                        s_UniversityOfLeedsDataCiteDOIPrefix,
+                        fis);
+                fis.close();
+
+                if (!searchResult.isEmpty()) {
+                    filterSearchResult(searchResult);
+                    HashMap<String, String> documents;
+                    documents = getDocuments(searchResult, useOnlyCachedFiles);
+                    boolean restart = false;
+                    getData(restart);
+                } else {
+                    System.out.println("No search results for " + search);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        } catch (Error e) {
+            e.printStackTrace(System.err);
+        }
+    }
+
+    /**
+     * filters a search result to exclude those with a URL containing s_filter
+     *
+     * @param searchResult
+     */
     public void filterSearchResult(HashMap<String, String> searchResult) {
         HashSet<String> keep;
         keep = new HashSet<String>();
@@ -211,7 +295,7 @@ public class Scraper {
         ite = searchResult.keySet().iterator();
         while (ite.hasNext()) {
             s_URL = ite.next();
-            if (s_URL.contains("archive.researchdata.leeds.ac.uk")) {
+            if (s_URL.contains(s_filter)) {
                 System.out.println("Not parsing search result from " + s_URL);
             } else {
                 keep.add(s_URL);
@@ -220,8 +304,14 @@ public class Scraper {
         searchResult.keySet().retainAll(keep);
     }
 
+    /**
+     * GEt and save all documents in the search results
+     * @param searchResult
+     * @return 
+     */
     public HashMap<String, String> getDocuments(
-            HashMap<String, String> searchResult) {
+            HashMap<String, String> searchResult,
+            boolean useOnlyCachedFiles) {
         HashMap<String, String> result;
         result = new HashMap<String, String>();
         Iterator<String> ite2;
@@ -230,7 +320,7 @@ public class Scraper {
         while (ite.hasNext()) {
             s_URL = ite.next();
             TreeSet<String> HTML;
-            HTML = getAndFormatDocument();
+            HTML = getAndFormatDocument(useOnlyCachedFiles);
             ite2 = HTML.iterator();
             while (ite2.hasNext()) {
                 System.out.println(ite2.next());
@@ -241,6 +331,12 @@ public class Scraper {
         return result;
     }
 
+    /**
+     * Use Jsoup to get search results.
+     *
+     * @return HashMap<String, String> result where the keys are URLs and the
+     * values are Titles.
+     */
     public HashMap<String, String> getSearchResult() {
         HashMap<String, String> result;
         result = new HashMap<String, String>();
@@ -322,8 +418,10 @@ public class Scraper {
 //        return Generic_StaticString.getLowerCase(upperCase);
 //    }
     public void writeHouseprices(
-            PrintWriter pw) {
-        TreeSet<String> prices = getAndFormatDocument();
+            PrintWriter pw,
+            boolean useOnlyCachedFiles
+    ) {
+        TreeSet<String> prices = getAndFormatDocument(useOnlyCachedFiles);
         Iterator aIterator = prices.iterator();
         while (aIterator.hasNext()) {
             pw.write((String) aIterator.next());
@@ -342,8 +440,9 @@ public class Scraper {
     public int writeHouseprices(
             PrintWriter outPW,
             PrintWriter logPW,
-            PrintWriter sharedLogPW) {
-        TreeSet<String> prices = getAndFormatDocument();
+            PrintWriter sharedLogPW,
+            boolean useOnlyCachedFiles) {
+        TreeSet<String> prices = getAndFormatDocument(useOnlyCachedFiles);
 //        sharedLogPW.print('.');
 //        sharedLogPW.flush();
         if (prices.isEmpty()) {
@@ -429,11 +528,43 @@ public class Scraper {
         return result;
     }
 
-    public TreeSet<String> getAndFormatDocument() {
+    /**
+     * 
+     * @return 
+     */
+    public TreeSet<String> getAndFormatDocument(boolean useOnlyCachedFiles) {
         TreeSet<String> result = new TreeSet<String>();
         HttpURLConnection connection;
         BufferedReader br;
         String line;
+        File pdfDir = null;
+        File pdfFile = null;
+        if (s_URL.endsWith(".pdf")) {
+                String[] split;
+                split = s_URL.split("/");
+                String filename;
+                filename = split[split.length - 1];
+                String dirname;
+                dirname = s_URL.replace(":", "_");
+                dirname = dirname.replace("/", "_");
+                pdfDir = new File(
+                        outDir,
+                        dirname);
+                if (!pdfDir.exists()) {
+                    pdfDir.mkdirs();
+                }
+                pdfFile = new File(
+                        pdfDir,
+                        filename);
+        }
+        if (useOnlyCachedFiles){
+            if (s_URL.endsWith(".pdf")) {
+                if (pdfFile.exists()) {
+                    int debug = 1;
+                    // Hoping to get here as part of caching results for parsing...
+                }
+            }
+        } else {
         try {
             connection = getOpenHttpURLConnection();
             int responseCode = connection.getResponseCode();
@@ -496,9 +627,7 @@ public class Scraper {
             inputStream = connection.getInputStream();
 
             if (contentType.equalsIgnoreCase("application/pdf")) {
-                File pdfFile;
-                pdfFile = new File(outDir,
-                        "test.pdf");
+               
 
                 FileOutputStream outputStream = new FileOutputStream(pdfFile);
                 int bytesRead = -1;
@@ -585,8 +714,11 @@ public class Scraper {
 //            }
 //            br.close();
             //}
+        } catch (ConnectException e) {
+             e.printStackTrace(System.err);
         } catch (Exception e) {
-            //e.printStackTrace(System.err);
+            e.printStackTrace(System.err);
+        }
         }
         return result;
     }

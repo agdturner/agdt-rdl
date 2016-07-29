@@ -47,58 +47,57 @@ public class Run extends AbstractRun {
             String[] DOIForRestart = getDOIForRestart(filenamepart);
             if (DOIForRestart == null) {
                 formatNew();
-            } else {
-                if (DOIForRestart[0] != null) {
-                    String a0Restart = DOIForRestart[0].substring(0, 1);
-                    initialiseOutputs(filenamepart);
-                    // Process
-                    int n0;
-                    int _int0;
-                    int counter = 0;
-                    int numberOfHousepriceRecords = 0;
-                    int numberOfPostcodesWithHousepriceRecords = 0;
-                    boolean a0Restarter = false;
-                    boolean n0Restarter = false;
-                    boolean secondPartPostcodeRestarter = false;
-                        if (!a0Restarter) {
+            } else if (DOIForRestart[0] != null) {
+                String a0Restart = DOIForRestart[0].substring(0, 1);
+                initialiseOutputs(filenamepart);
+                // Process
+                int n0;
+                int _int0;
+                int counter = 0;
+                int numberOfHousepriceRecords = 0;
+                int numberOfPostcodesWithHousepriceRecords = 0;
+                boolean a0Restarter = false;
+                boolean n0Restarter = false;
+                boolean secondPartPostcodeRestarter = false;
+                if (!a0Restarter) {
 //                            if (a0.equalsIgnoreCase(a0Restart)) {
 //                                a0Restarter = true;
 //                            }
-int debug = 1;
-                        } else {
-                            for (n0 = 0; n0 < 10; n0++) {
-                                if (!n0Restarter) {
+                    int debug = 1;
+                } else {
+                    for (n0 = 0; n0 < 10; n0++) {
+                        if (!n0Restarter) {
 //                                    if (n0 == n0Restart) {
 //                                        n0Restarter = true;
 //                                    }
-int debug = 1;
-                                } else {
-                                    checkRequestRate();
-                                    if (s.isReturningOutcode()) {
-                                                _int0 = s.writeHouseprices(
-                                                        outPR,
-                                                        logPR,
-                                                        sharedLogPR);
-                                                counter++;
-                                                numberOfHousepriceRecords += _int0;
-                                                if (_int0 > 0) {
-                                                    numberOfPostcodesWithHousepriceRecords++;
-                                                }
-                                                } else {
-                                        Scraper.updateLog(
-                                                logPR,
-                                                sharedLogPR);
-                                    }
+                            int debug = 1;
+                        } else {
+                            checkRequestRate();
+                            if (s.isReturningOutcode()) {
+                                _int0 = s.writeHouseprices(
+                                        outPR,
+                                        logPR,
+                                        sharedLogPR,
+                                        s.useOnlyCachedFiles);
+                                counter++;
+                                numberOfHousepriceRecords += _int0;
+                                if (_int0 > 0) {
+                                    numberOfPostcodesWithHousepriceRecords++;
                                 }
+                            } else {
+                                Scraper.updateLog(
+                                        logPR,
+                                        sharedLogPR);
                             }
                         }
+                    }
+                }
 //                        System.out.println(getReportString(
 //                                counter,
 //                                numberOfHousepriceRecords,
 //                                numberOfPostcodesWithHousepriceRecords));
-                    // Final reporting
-                    finalise(counter, numberOfHousepriceRecords, numberOfPostcodesWithHousepriceRecords);
-                }
+                // Final reporting
+                finalise(counter, numberOfHousepriceRecords, numberOfPostcodesWithHousepriceRecords);
             }
         }
     }
@@ -111,24 +110,25 @@ int debug = 1;
         int n0;
         int _int0;
         int counter = 0;
-       int numberOfDOIRecords = 0;
-            int numberOfDOIRecordsWithLinkBackPublications = 0;
+        int numberOfDOIRecords = 0;
+        int numberOfDOIRecordsWithLinkBackPublications = 0;
         for (n0 = 0; n0 < 10; n0++) {
-                 checkRequestRate();
-                if (s.isReturningOutcode()) {
-                         _int0 = s.writeHouseprices(
-                                outPR,
-                                logPR,
-                                sharedLogPR);
-                        counter++;
-                        numberOfDOIRecords += _int0;
-                        if (_int0 > 0) {
-                            numberOfDOIRecordsWithLinkBackPublications++;
-                        }
-                } else {
-                    s.updateLog(
-                            logPR,
-                            sharedLogPR);
+            checkRequestRate();
+            if (s.isReturningOutcode()) {
+                _int0 = s.writeHouseprices(
+                        outPR,
+                        logPR,
+                        sharedLogPR,
+                        s.useOnlyCachedFiles);
+                counter++;
+                numberOfDOIRecords += _int0;
+                if (_int0 > 0) {
+                    numberOfDOIRecordsWithLinkBackPublications++;
+                }
+            } else {
+                s.updateLog(
+                        logPR,
+                        sharedLogPR);
             }
 //            System.out.println(getReportString(
 //                    counter,

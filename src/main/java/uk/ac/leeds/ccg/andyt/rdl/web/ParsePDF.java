@@ -94,6 +94,7 @@ public class ParsePDF {
                         }
 
                         //Rectangle2D.Float awtRect = new Rectangle2D.Float(x, y, width, height);
+                        // Rounding here could be a problem!
                         Rectangle2D.Double awtRect = new Rectangle2D.Double(x, y, width, height);
                         stripper.addRegion("" + j, awtRect);
                     }
