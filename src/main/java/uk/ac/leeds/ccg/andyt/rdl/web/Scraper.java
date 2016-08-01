@@ -53,9 +53,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.tika.exception.TikaException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.xml.sax.SAXException;
+import uk.ac.leeds.ccg.andyt.generic.io.Generic_StaticIO;
 import uk.ac.leeds.ccg.andyt.generic.utilities.Generic_Execution;
 import uk.ac.leeds.ccg.andyt.generic.utilities.Generic_Time;
 
@@ -63,9 +66,9 @@ public class Scraper {
 
     File directory;
     static File sharedLogFile;
-    
+
     boolean useOnlyCachedFiles;
-            String s_filter;
+    String s_filter;
     String s_HipertyTipperty;
     String s_Resolver;
     String s_UniversityOfLeedsDataCiteDOIPrefix;
@@ -162,8 +165,8 @@ public class Scraper {
         s_Resolver = "doi.org";
         s_UniversityOfLeedsDataCiteDOIPrefix = "10.5518";
 
-            s_filter = "archive.researchdata.leeds.ac.uk";
-            
+        s_filter = "archive.researchdata.leeds.ac.uk";
+
         // Options
         // Either run a test or the full monty.
         // <runTest>
@@ -188,43 +191,20 @@ public class Scraper {
             s_DOISuffix = "" + i;
             s_DOI = s_UniversityOfLeedsDataCiteDOIPrefix + s_backslash + s_DOISuffix;
             s_DOIWithResolver = s_Resolver + s_backslash + s_DOI;
-
-            //s_URL = "https://www.google.co.uk/webhp?sourceid=chrome-instant&ion=1&espv=2&ie=UTF-8#q=%22doi.org%2F" + s_UniversityOfLeedsDataCiteDOIPrefix + "%2F" + s_DOISuffix + "%22";
-            //s_URL = "https://www.google.co.uk/webhp?sourceid=chrome-instant&ion=1&espv=2&ie=UTF-8#q=%22doi.org%2F" + s_UniversityOfLeedsDataCiteDOIPrefix + "%2F" + s_DOISuffix + "%22";
             search = "\"" + s_DOIWithResolver + "\"";
-
             HashMap<String, String> searchResult;
-            //searchResult = getSearchResult(); // This is for a real search, currently just testing.
+            //searchResult = getSearchResult(); // This is for a real search.
             searchResult = new HashMap<String, String>();
             String testurl;
             testurl = s_HipertyTipperty + "eprints.whiterose.ac.uk/87869/1/Brockway%20et%20al%202015%20China%20energy%20efficiency%20and%20decomposition.pdf";
             String testtitle;
             testtitle = "Download - White Rose Research Online";
             searchResult.put(testurl, testtitle);
-
-            File pdfFile;
-            pdfFile = new File(outDir,
-                    "test.pdf");
-            //String s = formatPDF(pdfFile);
-
-            FileInputStream fis;
-            fis = new FileInputStream(pdfFile);
-            ParsePDF.parse(
-                    pdfFile,
-                    s_UniversityOfLeedsDataCiteDOIPrefix,
-                    fis);
-            fis.close();
-
-            if (!searchResult.isEmpty()) {
-                filterSearchResult(searchResult);
-                HashMap<String, String> documents;
-                documents = getDocuments(searchResult, useOnlyCachedFiles);
-                boolean restart = false;
-                getData(restart);
-            } else {
-                System.out.println("No search results for " + search);
-            }
-            //}
+            filterSearchResult(searchResult);
+            HashMap<String, String> documents;
+            documents = getDocuments(searchResult, useOnlyCachedFiles);
+            boolean restart = false;
+            getData(restart);
         } catch (Exception e) {
             e.printStackTrace(System.err);
         } catch (Error e) {
@@ -306,8 +286,9 @@ public class Scraper {
 
     /**
      * GEt and save all documents in the search results
+     *
      * @param searchResult
-     * @return 
+     * @return
      */
     public HashMap<String, String> getDocuments(
             HashMap<String, String> searchResult,
@@ -529,8 +510,8 @@ public class Scraper {
     }
 
     /**
-     * 
-     * @return 
+     *
+     * @return
      */
     public TreeSet<String> getAndFormatDocument(boolean useOnlyCachedFiles) {
         TreeSet<String> result = new TreeSet<String>();
@@ -540,117 +521,110 @@ public class Scraper {
         File pdfDir = null;
         File pdfFile = null;
         if (s_URL.endsWith(".pdf")) {
-                String[] split;
-                split = s_URL.split("/");
-                String filename;
-                filename = split[split.length - 1];
-                String dirname;
-                dirname = s_URL.replace(":", "_");
-                dirname = dirname.replace("/", "_");
-                pdfDir = new File(
-                        outDir,
-                        dirname);
-                if (!pdfDir.exists()) {
-                    pdfDir.mkdirs();
-                }
-                pdfFile = new File(
-                        pdfDir,
-                        filename);
+            String[] split;
+            split = s_URL.split("/");
+            String filename;
+            filename = split[split.length - 1];
+            String dirname;
+            dirname = s_URL.replace(":", "_");
+            dirname = dirname.replace("/", "_");
+            pdfDir = new File(
+                    outDir,
+                    dirname);
+            if (!pdfDir.exists()) {
+                pdfDir.mkdirs();
+            }
+            pdfFile = new File(
+                    pdfDir,
+                    filename);
         }
-        if (useOnlyCachedFiles){
+        if (useOnlyCachedFiles) {
             if (s_URL.endsWith(".pdf")) {
                 if (pdfFile.exists()) {
-                    int debug = 1;
-                    // Hoping to get here as part of caching results for parsing...
+                    String[] formattedPDF = null;
+                    try {
+                        formattedPDF = formatPDF(pdfFile);
+                    } catch (IOException ex) {
+                        Logger.getLogger(Scraper.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
+            } else {
+                System.out.println(s_URL + " not a PDF File");
             }
         } else {
-        try {
-            connection = getOpenHttpURLConnection();
-            int responseCode = connection.getResponseCode();
-            if (responseCode != 200) {
-                if (responseCode == 404) {
-                    return result;
-                }
-                String message = s_URL + " connection.getResponseCode() "
-                        + responseCode
-                        + "see http://en.wikipedia.org/wiki/List_of_HTTP_status_codes";
-                if (responseCode == 301 || responseCode == 302 || responseCode == 303
-                        || responseCode == 403) {
-                    message += "and http://en.wikipedia.org/wiki/HTTP_";
-                    message += Integer.toString(responseCode);
-                }
-                throw new Error(message);
-            }
-            Map<String, List<String>> headerFields;
-            headerFields = connection.getHeaderFields();
-            if (!headerFields.isEmpty()) {
-                System.out.println("<HeaderFields>");
-                Iterator<String> ite;
-                ite = headerFields.keySet().iterator();
-                String key;
-                String value2;
-                List<String> value;
-                while (ite.hasNext()) {
-                    key = ite.next();
-                    System.out.println("<HeaderKey>");
-                    System.out.println("key " + key);
-                    value = headerFields.get(key);
-                    if (!value.isEmpty()) {
-                        System.out.println("<HeaderValues>");
-                        Iterator<String> ite2;
-                        ite2 = value.iterator();
-                        while (ite2.hasNext()) {
-                            value2 = ite2.next();
-                            System.out.println(value2);
-                        }
-                        System.out.println("</HeaderValues>");
+            try {
+                connection = getOpenHttpURLConnection();
+                int responseCode = connection.getResponseCode();
+                if (responseCode != 200) {
+                    if (responseCode == 404) {
+                        return result;
                     }
-                    System.out.println("</HeaderKey>");
+                    String message = s_URL + " connection.getResponseCode() "
+                            + responseCode
+                            + "see http://en.wikipedia.org/wiki/List_of_HTTP_status_codes";
+                    if (responseCode == 301 || responseCode == 302 || responseCode == 303
+                            || responseCode == 403) {
+                        message += "and http://en.wikipedia.org/wiki/HTTP_";
+                        message += Integer.toString(responseCode);
+                    }
+                    throw new Error(message);
                 }
-                System.out.println("</HeaderFields>");
-            }
-            String contentEncoding;
-            contentEncoding = connection.getContentEncoding();
-            System.out.println("contentEncoding " + contentEncoding);
-            long contentLength;
-            contentLength = connection.getContentLengthLong();
-            System.out.println("contentLength " + contentLength);
-            String contentType;
-            contentType = connection.getContentType();
-            System.out.println("contentType " + contentType);
-            Object content;
-            content = connection.getContent();
-            System.out.println("contentClass " + content.getClass());
-
-            InputStream inputStream;
-            inputStream = connection.getInputStream();
-
-            if (contentType.equalsIgnoreCase("application/pdf")) {
-               
-
-                FileOutputStream outputStream = new FileOutputStream(pdfFile);
-                int bytesRead = -1;
-                byte[] buffer = new byte[BUFFER_SIZE];
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
+                Map<String, List<String>> headerFields;
+                headerFields = connection.getHeaderFields();
+                if (!headerFields.isEmpty()) {
+                    System.out.println("<HeaderFields>");
+                    Iterator<String> ite;
+                    ite = headerFields.keySet().iterator();
+                    String key;
+                    String value2;
+                    List<String> value;
+                    while (ite.hasNext()) {
+                        key = ite.next();
+                        System.out.println("<HeaderKey>");
+                        System.out.println("key " + key);
+                        value = headerFields.get(key);
+                        if (!value.isEmpty()) {
+                            System.out.println("<HeaderValues>");
+                            Iterator<String> ite2;
+                            ite2 = value.iterator();
+                            while (ite2.hasNext()) {
+                                value2 = ite2.next();
+                                System.out.println(value2);
+                            }
+                            System.out.println("</HeaderValues>");
+                        }
+                        System.out.println("</HeaderKey>");
+                    }
+                    System.out.println("</HeaderFields>");
                 }
-                outputStream.close();
-                inputStream.close();
-                FileInputStream fis;
-                fis = new FileInputStream(pdfFile);
+                String contentEncoding;
+                contentEncoding = connection.getContentEncoding();
+                System.out.println("contentEncoding " + contentEncoding);
+                long contentLength;
+                contentLength = connection.getContentLengthLong();
+                System.out.println("contentLength " + contentLength);
+                String contentType;
+                contentType = connection.getContentType();
+                System.out.println("contentType " + contentType);
+                Object content;
+                content = connection.getContent();
+                System.out.println("contentClass " + content.getClass());
 
-                String s = formatPDF(pdfFile);
+                InputStream inputStream;
+                inputStream = connection.getInputStream();
 
-                if (s.contains(s_UniversityOfLeedsDataCiteDOIPrefix)) {
-                    System.out.println("Paper contains " + s_UniversityOfLeedsDataCiteDOIPrefix);
-                } else {
-                    System.out.println("Paper does not contain " + s_UniversityOfLeedsDataCiteDOIPrefix);
-                }
-//               ParsePDF.parse(
-//                       pdfFile,
-//                       s_UniversityOfLeedsDataCiteDOIPrefix,
-//                       fis);
+                if (contentType.equalsIgnoreCase("application/pdf")) {
+                    // Store pdf
+                    FileOutputStream outputStream = new FileOutputStream(pdfFile);
+                    int bytesRead = -1;
+                    byte[] buffer = new byte[BUFFER_SIZE];
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, bytesRead);
+                    }
+                    outputStream.close();
+                    inputStream.close();
+
+                    String[] s = formatPDF(pdfFile);
 
 //                Object[] parsedPDF;
 //                parsedPDF = ParsePDF.parseWithTika(fis);
@@ -663,9 +637,9 @@ public class Scraper {
 //               } else {
 //                   System.out.println("Not Found Link " + linkText);
 //               }
-            } else {
-                System.out.println("Not a PDF maybe this is HTML...");
-            }
+                } else {
+                    System.out.println("Not a PDF maybe this is HTML...");
+                }
 
 //            br = new BufferedReader(
 //                    new InputStreamReader(connection.getInputStream()));
@@ -713,30 +687,34 @@ public class Scraper {
 //                //e.printStackTrace(System.err);
 //            }
 //            br.close();
-            //}
-        } catch (ConnectException e) {
-             e.printStackTrace(System.err);
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
-        }
+                //}
+            } catch (ConnectException e) {
+                e.printStackTrace(System.err);
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
         }
         return result;
     }
 
-    public String formatPDF(File pdfFile) throws FileNotFoundException, IOException {
-        String result;
-        result = ParsePDF.parseToString(pdfFile);
-
-        if (result.contains(s_UniversityOfLeedsDataCiteDOIPrefix)) {
-            System.out.println("Paper contains " + s_UniversityOfLeedsDataCiteDOIPrefix);
-            if (result.contains(s_DOI)) {
-                System.out.println("Paper contains " + s_DOI);
-                if (result.contains(s_DOIWithResolver)) {
-                    System.out.println("Paper contains " + s_DOIWithResolver);
+    public String[] formatPDF(File pdfFile) throws FileNotFoundException, IOException {
+        String[] result;
+        result = new String[2];
+        result[0] = ParsePDF.parseToString(pdfFile);
+        if (result[0].contains(s_UniversityOfLeedsDataCiteDOIPrefix)) {
+            result[1] = "Paper contains " + s_UniversityOfLeedsDataCiteDOIPrefix;
+            System.out.println(result[1]);
+            if (result[0].contains(s_DOI)) {
+                result[1] = "Paper contains " + s_DOI;
+                System.out.println(result[1]);
+                if (result[0].contains(s_DOIWithResolver)) {
+                    result[1] = "Paper contains " + s_DOIWithResolver;
+                    System.out.println(result[1]);
                 }
             }
         } else {
-            System.out.println("Paper does not contain " + s_UniversityOfLeedsDataCiteDOIPrefix);
+            result[1] = "Paper does not contain " + s_UniversityOfLeedsDataCiteDOIPrefix;
+            System.out.println(result[1]);
         }
         return result;
     }
@@ -883,4 +861,38 @@ public class Scraper {
         return sharedLogFile;
     }
 
+    protected HashMap<String, File> files;
+
+    protected HashMap<String, File> getFiles() {
+        if (files == null) {
+            files = new HashMap<String, File>();
+        }
+        return files;
+    }
+
+    public File getFile() {
+        File result;
+        String[] split;
+        if (files.containsKey(s_URL)) {
+            result = files.get(s_URL);
+        } else {
+            split = s_URL.split("/");
+            String filename;
+            filename = split[split.length - 1];
+            String dirname;
+            dirname = s_URL.replace(":", "_");
+            dirname = dirname.replace("/", "_");
+            File dir = new File(
+                    outDir,
+                    dirname);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            result = new File(
+                    dir,
+                    filename);
+            files.put(s_URL, result);
+        }
+        return result;
+    }
 }

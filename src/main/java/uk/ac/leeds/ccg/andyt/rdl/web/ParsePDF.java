@@ -234,9 +234,9 @@ public class ParsePDF {
         for (int i = 0; i < nll; i++) {
             cn = nl.item(i);
             String nn = cn.getNodeName();
-            System.out.print(nn);
+            System.out.print("NodeName " + nn);
             String nv = cn.getNodeValue();
-            System.out.println(" " + nv);
+            System.out.println("NodeValue " + nv);
             //    cn.
         }
     }
@@ -260,10 +260,11 @@ public class ParsePDF {
                     aPDRectangle.getHeight());
             stripper.addRegion("class1", rect);
             stripper.extractRegions(page);
-            System.out.println("Text in the area:" + rect);
+            System.out.println("<Text in the area:" + rect + ">");
             String text;
             text = stripper.getTextForRegion("class1");
             System.out.println(text);
+            System.out.println("</Text in the area:" + rect + ">");
             result += text;
         }
         return result;
