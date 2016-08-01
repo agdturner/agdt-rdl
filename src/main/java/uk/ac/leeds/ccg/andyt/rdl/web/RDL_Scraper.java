@@ -178,12 +178,12 @@ public class RDL_Scraper {
 //        runTest(index, useOnlyCachedFiles);
         // </runTest>
         // <fullMonty>
-        useOnlyCachedFiles = true; // This run will only use files already pulled from the web.
-//        useOnlyCachedFiles = false; // This will pull files from the web and check if they are different from before and use the most recent file.
+        //useOnlyCachedFiles = true; // This run will only use files already pulled from the web.
+        useOnlyCachedFiles = false; // This will pull files from the web and check if they are different from before and use the most recent file.
         int imin; // the min index of the data in our repository.
         int imax; // the max index of the data in our repository.
-        imin = 9;
-        imax = 9;
+        imin = 11;
+        imax = 47;
         runSearch(imin, imax, useOnlyCachedFiles);
         // </fullMonty>
     }
@@ -256,6 +256,9 @@ public class RDL_Scraper {
         File resultsDir = new File(
                 RDL_Files.getDir(),
                 "DOI_" + index);
+        if (!resultsDir.exists()) {
+            resultsDir.mkdirs();
+        }
         File resultFile;
         resultFile = new File(
                 resultsDir,
