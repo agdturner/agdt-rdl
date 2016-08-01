@@ -36,10 +36,10 @@ import uk.ac.leeds.ccg.andyt.generic.lang.Generic_StaticString;
 /**
  * To be extended by Run methods.
  */
-public abstract class AbstractRun implements Runnable {
+public abstract class RDL_RunAbstract implements Runnable {
 
     protected boolean restart;
-    protected Scraper s;
+    protected RDL_Scraper scraper;
     // For convenience
     protected String s_URL;
     
@@ -51,10 +51,10 @@ public abstract class AbstractRun implements Runnable {
     protected PrintWriter sharedLogPR;
     
     protected void init(
-            Scraper s,
+            RDL_Scraper scraper,
             boolean restart) {
-        this.s = s;
-        this.s_URL = s.s_URL;
+        this.scraper = scraper;
+        this.s_URL = scraper.s_URL;
         this.restart = restart;
     }
 
@@ -79,7 +79,7 @@ public abstract class AbstractRun implements Runnable {
     protected void initialiseOutputs(
             String filenamepart) {
         try {
-            File outDirectory = s.getDirectory();
+            File outDirectory = scraper.getDirectory();
             outDirectory.mkdirs();
             outFile = new File(
                     outDirectory,
@@ -98,7 +98,7 @@ public abstract class AbstractRun implements Runnable {
             logPR = Generic_StaticIO.getPrintWriter(logFile, restart);
         } catch (IOException ex) {
             System.err.println(ex.toString());
-            Logger.getLogger(AbstractRun.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RDL_RunAbstract.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -116,7 +116,7 @@ public abstract class AbstractRun implements Runnable {
             String filenamepart) {
         String[] result = null;
         try {
-            File outDirectory = s.getDirectory();
+            File outDirectory = scraper.getDirectory();
             if (!outDirectory.exists()) {
                 return null;
             }
@@ -159,7 +159,7 @@ public abstract class AbstractRun implements Runnable {
                  */
             }
         } catch (IOException ex) {
-            Logger.getLogger(AbstractRun.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RDL_RunAbstract.class.getName()).log(Level.SEVERE, null, ex);
         }
         return result;
     }

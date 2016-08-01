@@ -118,7 +118,7 @@ import uk.ac.leeds.ccg.andyt.generic.io.Generic_StaticIO;
  * marks. In addition, gave the client the ability to select how these are
  * handled, either obeying Excel's or UNIX formatting conventions.
  */
-public class XSLX2CSV {
+public class RDL_XSLX2CSV {
 
     private static String header;
 
@@ -183,7 +183,7 @@ public class XSLX2CSV {
         // that certain embedded characters are escaped in accordance with
         // Excel's formatting conventions
         this.convertExcelToCSV(strSource, strDestination,
-                XSLX2CSV.DEFAULT_SEPARATOR, XSLX2CSV.EXCEL_STYLE_ESCAPING);
+                RDL_XSLX2CSV.DEFAULT_SEPARATOR, RDL_XSLX2CSV.EXCEL_STYLE_ESCAPING);
     }
 
     /**
@@ -225,7 +225,7 @@ public class XSLX2CSV {
         // characters are escaped in accordance with Excel's formatting
         // conventions
         this.convertExcelToCSV(strSource, strDestination,
-                separator, XSLX2CSV.EXCEL_STYLE_ESCAPING);
+                separator, RDL_XSLX2CSV.EXCEL_STYLE_ESCAPING);
     }
 
     /**
@@ -292,8 +292,8 @@ public class XSLX2CSV {
 
         // Ensure the value passed to the formattingConvention parameter is
         // within range.
-        if (formattingConvention != XSLX2CSV.EXCEL_STYLE_ESCAPING
-                && formattingConvention != XSLX2CSV.UNIX_STYLE_ESCAPING) {
+        if (formattingConvention != RDL_XSLX2CSV.EXCEL_STYLE_ESCAPING
+                && formattingConvention != RDL_XSLX2CSV.UNIX_STYLE_ESCAPING) {
             throw new IllegalArgumentException("The value passed to the "
                     + "formattingConvention parameter is out of range.");
         }
@@ -339,7 +339,7 @@ public class XSLX2CSV {
             destinationFilename = excelFile.getName();
             destinationFilename = destinationFilename.substring(
                     0, destinationFilename.lastIndexOf("."))
-                    + XSLX2CSV.CSV_FILE_EXTENSION;
+                    + RDL_XSLX2CSV.CSV_FILE_EXTENSION;
 
             // Save the CSV file away using the newly constricted file name
             // and to the specified directory.
@@ -589,7 +589,7 @@ public class XSLX2CSV {
 
         // If the fields contents should be formatted to confrom with Excel's
         // convention....
-        if (this.formattingConvention == XSLX2CSV.EXCEL_STYLE_ESCAPING) {
+        if (this.formattingConvention == RDL_XSLX2CSV.EXCEL_STYLE_ESCAPING) {
 
             // Firstly, check if there are any speech marks (") in the field;
             // each occurrence must be escaped with another set of spech marks
@@ -651,11 +651,11 @@ public class XSLX2CSV {
         // with matching names but different extensions - Test.xls and Test.xlsx
         // for example - then the CSV file generated from one will overwrite
         // that generated from the other.
-        XSLX2CSV converter = null;
+        RDL_XSLX2CSV converter = null;
         boolean converted = true;
         long startTime = System.currentTimeMillis();
         try {
-            converter = new XSLX2CSV();
+            converter = new RDL_XSLX2CSV();
             if (args.length == 0) {
                 args = new String[2];
                 args[0] = "N:/Academic-Services/Library-Services/RDL/Repository/Riley_Tate/DOI-67";
@@ -715,7 +715,7 @@ public class XSLX2CSV {
                         + "\t\t\t\twill obey Excel's formatting conventions.");
                 converted = false;
             }
-        } // It is not wise to have such a wide catch clause - Exception is very
+        } // It is not wise to have such a wide catch clause - Exception is very // It is not wise to have such a wide catch clause - Exception is very
         // close to being at the top of the inheritance hierarchy - though it
         // will suffice for this example as it is really not possible to recover
         // easilly from an exceptional set of circumstances at this point in the

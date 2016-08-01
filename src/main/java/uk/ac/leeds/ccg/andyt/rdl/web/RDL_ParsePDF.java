@@ -10,7 +10,9 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 import org.apache.jempbox.impl.XMLUtil;
 import org.apache.jempbox.xmp.XMPMetadata;
 import org.apache.jempbox.xmp.XMPSchema;
@@ -46,7 +48,7 @@ import org.w3c.dom.NodeList;
 
 import org.xml.sax.SAXException;
 
-public class ParsePDF {
+public class RDL_ParsePDF {
 
     /**
      * https://svn.apache.org/viewvc/pdfbox/trunk/examples/ Based on
@@ -60,87 +62,94 @@ public class ParsePDF {
      * @throws TikaException
      * @throws SAXException
      */
-    public static Object[] parse(
+    public static ArrayList<String[]> parseForLinks(
             File f,
             String filter,
             FileInputStream fis) throws IOException, TikaException, SAXException {
+        ArrayList<String[]> result;
+        result = new ArrayList<String[]>();
         PDDocument doc = PDDocument.load(f);
         int pageNum = 0;
         for (PDPage page : doc.getPages()) {
             pageNum++;
 
-            if (pageNum == 11) { //Degug test hack
-
-                System.out.println("Parsing page " + pageNum);
-                PDFTextStripperByArea stripper = new PDFTextStripperByArea();
-                List<PDAnnotation> annotations = page.getAnnotations();
-                //first setup text extraction regions
-                for (int j = 0; j < annotations.size(); j++) {
-                    PDAnnotation annot = annotations.get(j);
-                    if (annot instanceof PDAnnotationLink) {
-                        PDAnnotationLink link = (PDAnnotationLink) annot;
-                        PDRectangle rect = link.getRectangle();
-                        //need to reposition link rectangle to match text space
-                        float x = rect.getLowerLeftX();
-                        float y = rect.getUpperRightY();
-                        float width = rect.getWidth();
-                        float height = rect.getHeight();
-                        int rotation = page.getRotation();
-                        if (rotation == 0) {
-                            PDRectangle pageSize = page.getMediaBox();
-                            y = pageSize.getHeight() - y;
-                        } else if (rotation == 90) {
-                            //do nothing
-                        }
-
-                        //Rectangle2D.Float awtRect = new Rectangle2D.Float(x, y, width, height);
-                        // Rounding here could be a problem!
-                        Rectangle2D.Double awtRect = new Rectangle2D.Double(x, y, width, height);
-                        stripper.addRegion("" + j, awtRect);
+//            if (pageNum == 11) { //Degug test hack
+            System.out.println("Parsing page " + pageNum);
+            PDFTextStripperByArea stripper = new PDFTextStripperByArea();
+            List<PDAnnotation> annotations = page.getAnnotations();
+            //first setup text extraction regions
+            for (int j = 0; j < annotations.size(); j++) {
+                PDAnnotation annot = annotations.get(j);
+                if (annot instanceof PDAnnotationLink) {
+                    PDAnnotationLink link = (PDAnnotationLink) annot;
+                    PDRectangle rect = link.getRectangle();
+                    //need to reposition link rectangle to match text space
+                    float x = rect.getLowerLeftX();
+                    float y = rect.getUpperRightY();
+                    float width = rect.getWidth();
+                    float height = rect.getHeight();
+                    int rotation = page.getRotation();
+                    if (rotation == 0) {
+                        PDRectangle pageSize = page.getMediaBox();
+                        y = pageSize.getHeight() - y;
+                    } else if (rotation == 90) {
+                        //do nothing
                     }
+
+                    //Rectangle2D.Float awtRect = new Rectangle2D.Float(x, y, width, height);
+                    // Rounding here could be a problem!
+                    Rectangle2D.Double awtRect = new Rectangle2D.Double(x, y, width, height);
+                    stripper.addRegion("" + j, awtRect);
                 }
-
-                stripper.extractRegions(page);
-
-                for (int j = 0; j < annotations.size(); j++) {
-                    PDAnnotation annot = annotations.get(j);
-                    if (annot instanceof PDAnnotationLink) {
-                        PDAnnotationLink link = (PDAnnotationLink) annot;
-                        PDAction action = link.getAction();
-                        if (action == null) {
-                            System.out.println(link.getContents());
-                            System.out.println(annot.getClass().getName());
-                            System.out.println(annot.getAnnotationName());
-                            //System.out.println(annot.getNormalAppearanceStream().toString());
-                            System.out.println(annot.getContents());
-                            System.out.println(annot.getSubtype());
-                        } else {
-                            String urlText = stripper.getTextForRegion("" + j);
-                            if (action instanceof PDActionURI) {
-                                PDActionURI uri = (PDActionURI) action;
-                                String url;
-                                url = uri.getURI();
-                                if (url.contains(filter)) {
-                                    System.out.println("Page " + pageNum);
-                                    System.out.println("urlText " + urlText);
-                                    System.out.println("URL " + uri.getURI());
-                                } else {
-                                    System.out.println("URL " + uri.getURI());
-                                }
-                            } else {
-                                System.out.println(action.getType());
-                            }
-                        }
-                    } else {
-                        System.out.println(annot.getClass().getName());
-                        System.out.println(annot.getAnnotationName());
-                        System.out.println(annot.getContents());
-                        System.out.println(annot.getSubtype());
-                    }
-                }
-
             }
 
+            stripper.extractRegions(page);
+
+             for (int j = 0; j < annotations.size(); j++) {
+                PDAnnotation annot = annotations.get(j);
+                if (annot instanceof PDAnnotationLink) {
+                    PDAnnotationLink link = (PDAnnotationLink) annot;
+                    PDAction action = link.getAction();
+                    if (action == null) {
+                        System.out.println(link.getContents());
+                        System.out.println(annot.getClass().getName());
+                        System.out.println(annot.getAnnotationName());
+                        //System.out.println(annot.getNormalAppearanceStream().toString());
+                        System.out.println(annot.getContents());
+                        System.out.println(annot.getSubtype());
+                    } else {
+                        String urlText = stripper.getTextForRegion("" + j);
+                        if (action instanceof PDActionURI) {
+                            PDActionURI uri = (PDActionURI) action;
+                            String url;
+                            url = uri.getURI();
+                            if (url.contains(filter)) {
+                                String[] partResult;
+                                partResult = new String[3];
+                                partResult[0] = "Page " + pageNum;
+                                partResult[1] = "urlText " + urlText;
+                                partResult[2] = "URL " + uri.getURI();
+                                System.out.println(partResult[0]);
+                                System.out.println(partResult[1]);
+                                System.out.println(partResult[2]);
+                                System.out.println("URL " + uri.getURI());
+                                result.add(partResult);
+                            } else {
+                                System.out.println("URL " + uri.getURI());
+                            }
+                        } else {
+                            System.out.println(action.getType());
+                        }
+                    }
+                } else {
+                    System.out.println(annot.getClass().getName());
+                    System.out.println(annot.getAnnotationName());
+                    System.out.println(annot.getContents());
+                    System.out.println(annot.getSubtype());
+                }
+            }
+
+            //}
         }
 //       PDDocument doc = PDDocument.load(f);
 //        int pageNum = 0;
@@ -166,10 +175,8 @@ public class ParsePDF {
 //                }
 //            }
 //        }
-        Object[] result;
-        result = null;
-//        result = parseWithTika(fis);
 
+//        result = parseWithTika(fis);
         //XMPSchema schema;
         //schema = new XMPSchema();
         //List<String> XMPBagOrSeqList;
@@ -241,6 +248,13 @@ public class ParsePDF {
         }
     }
 
+    /**
+     * Converts PDF to a String a page at a time.
+     *
+     * @param f
+     * @return
+     * @throws IOException
+     */
     public static String parseToString(File f) throws IOException {
         String result;
         result = "";

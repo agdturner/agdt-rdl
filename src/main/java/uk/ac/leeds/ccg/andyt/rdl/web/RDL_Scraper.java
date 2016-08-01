@@ -42,6 +42,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -61,8 +62,9 @@ import org.xml.sax.SAXException;
 import uk.ac.leeds.ccg.andyt.generic.io.Generic_StaticIO;
 import uk.ac.leeds.ccg.andyt.generic.utilities.Generic_Execution;
 import uk.ac.leeds.ccg.andyt.generic.utilities.Generic_Time;
+import uk.ac.leeds.ccg.andyt.rdl.io.RDL_Files;
 
-public class Scraper {
+public class RDL_Scraper {
 
     File directory;
     static File sharedLogFile;
@@ -77,7 +79,7 @@ public class Scraper {
     String s_DOIWithResolver;
     String s_URL;
     static String s_backslash = "/";
-    File outDir;
+    //File outDir;
     ExecutorService executorService;
     double connectionCount;
     double permittedConnectionRate;
@@ -92,7 +94,7 @@ public class Scraper {
     /**
      * Creates a new instance of ZooplaHousepriceScraper
      */
-    public Scraper() {
+    public RDL_Scraper() {
         //startTime = System.currentTimeMillis();
     }
 
@@ -106,7 +108,7 @@ public class Scraper {
             // Defaults output directory.
             args[0] = "C:/Users/geoagdt/projects/RDL";
         }
-        new Scraper().run(args);
+        new RDL_Scraper().run(args);
     }
 
     public long getTimeRunningMillis() {
@@ -132,7 +134,7 @@ public class Scraper {
                     wait(timeToWaitInMilliseconds);
                     connectionRate = getConnectionRate();
                 } catch (InterruptedException ex) {
-                    Logger.getLogger(Scraper.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         }
@@ -153,14 +155,13 @@ public class Scraper {
         try {
             getSharedLogFile().createNewFile();
         } catch (IOException ex) {
-            Logger.getLogger(Scraper.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
         }
         getSharedLogFile().deleteOnExit();
         directory = new File(args[0]);
-        outDir = new File(
+        RDL_Files.setDir(new File(
                 directory,
-                "out");
-        outDir.mkdirs();
+                "out"));
         s_HipertyTipperty = "http://";
         s_Resolver = "doi.org";
         s_UniversityOfLeedsDataCiteDOIPrefix = "10.5518";
@@ -170,25 +171,26 @@ public class Scraper {
         // Options
         // Either run a test or the full monty.
         // <runTest>
-        useOnlyCachedFiles = true; // This run will only use files already pulled from the web.
-//        useOnlyCachedFiles = false; // This will pull files from the web and check if they are different from before and use the most recent file.
-        runTest(useOnlyCachedFiles);
-        // </runTest>
-        // <fullMonty>
 //        useOnlyCachedFiles = true; // This run will only use files already pulled from the web.
 ////        useOnlyCachedFiles = false; // This will pull files from the web and check if they are different from before and use the most recent file.
-//        int n; // n is the number of datasets in our repository.
-//        n = 47;
-//        runSearch(n, useOnlyCachedFiles);
+//        int index;
+//        index = 7;
+//        runTest(index, useOnlyCachedFiles);
+        // </runTest>
+        // <fullMonty>
+        useOnlyCachedFiles = true; // This run will only use files already pulled from the web.
+//        useOnlyCachedFiles = false; // This will pull files from the web and check if they are different from before and use the most recent file.
+        int imin; // the min index of the data in our repository.
+        int imax; // the max index of the data in our repository.
+        imin = 9;
+        imax = 9;
+        runSearch(imin, imax, useOnlyCachedFiles);
         // </fullMonty>
     }
 
-    public void runTest(boolean useOnlyCachedFiles) {
+    public void runTest(int index, boolean useOnlyCachedFiles) {
         try {
-            // i is the index/number of the dataset to test
-            int i;
-            i = 7;
-            s_DOISuffix = "" + i;
+            s_DOISuffix = "" + index;
             s_DOI = s_UniversityOfLeedsDataCiteDOIPrefix + s_backslash + s_DOISuffix;
             s_DOIWithResolver = s_Resolver + s_backslash + s_DOI;
             search = "\"" + s_DOIWithResolver + "\"";
@@ -201,10 +203,11 @@ public class Scraper {
             testtitle = "Download - White Rose Research Online";
             searchResult.put(testurl, testtitle);
             filterSearchResult(searchResult);
-            HashMap<String, String> documents;
-            documents = getDocuments(searchResult, useOnlyCachedFiles);
-            boolean restart = false;
-            getData(restart);
+            HashMap<String, Object[]> results;
+            results = getResults(index, searchResult, useOnlyCachedFiles);
+            writeResults(getResultsPrintWriter(index), results);
+//            boolean restart = false;
+//            getData(restart);
         } catch (Exception e) {
             e.printStackTrace(System.err);
         } catch (Error e) {
@@ -212,11 +215,11 @@ public class Scraper {
         }
     }
 
-    public void runSearch(int n, boolean useOnlyCachedFiles) {
+    public void runSearch(int imin, int imax, boolean useOnlyCachedFiles) {
         try {
-            // i is the index/number of the dataset to test
-            for (int i = 1; i < 47; i++) {
-                s_DOISuffix = "" + i;
+            // index of the dataset DOI to test
+            for (int index = imin; index <= imax; index++) {
+                s_DOISuffix = "" + index;
                 s_DOI = s_UniversityOfLeedsDataCiteDOIPrefix + s_backslash + s_DOISuffix;
                 s_DOIWithResolver = s_Resolver + s_backslash + s_DOI;
 
@@ -224,43 +227,41 @@ public class Scraper {
                 //s_URL = "https://www.google.co.uk/webhp?sourceid=chrome-instant&ion=1&espv=2&ie=UTF-8#q=%22doi.org%2F" + s_UniversityOfLeedsDataCiteDOIPrefix + "%2F" + s_DOISuffix + "%22";
                 search = "\"" + s_DOIWithResolver + "\"";
 
+                PrintWriter pw = null;
+                    pw = getResultsPrintWriter(index);
+                    
                 HashMap<String, String> searchResult;
-                searchResult = getSearchResult(); // This is for a real search, currently just testing.
-                searchResult = new HashMap<String, String>();
-                String testurl;
-                testurl = s_HipertyTipperty + "eprints.whiterose.ac.uk/87869/1/Brockway%20et%20al%202015%20China%20energy%20efficiency%20and%20decomposition.pdf";
-                String testtitle;
-                testtitle = "Download - White Rose Research Online";
-                searchResult.put(testurl, testtitle);
-
-                File pdfFile;
-                pdfFile = new File(outDir,
-                        "test.pdf");
-                //String s = formatPDF(pdfFile);
-
-                FileInputStream fis;
-                fis = new FileInputStream(pdfFile);
-                ParsePDF.parse(
-                        pdfFile,
-                        s_UniversityOfLeedsDataCiteDOIPrefix,
-                        fis);
-                fis.close();
-
+                searchResult = getSearchResult();
                 if (!searchResult.isEmpty()) {
                     filterSearchResult(searchResult);
-                    HashMap<String, String> documents;
-                    documents = getDocuments(searchResult, useOnlyCachedFiles);
-                    boolean restart = false;
-                    getData(restart);
+                    HashMap<String, Object[]> results;
+                    results = getResults(index, searchResult, useOnlyCachedFiles);
+                    writeResults(pw, results);
+//                    boolean restart = false;
+//                    getData(restart);
                 } else {
-                    System.out.println("No search results for " + search);
+                   pw.println("No search result for search " + search);
                 }
+        pw.close();
             }
         } catch (Exception e) {
             e.printStackTrace(System.err);
         } catch (Error e) {
             e.printStackTrace(System.err);
         }
+    }
+
+    protected PrintWriter getResultsPrintWriter(int index) {
+        PrintWriter result;
+        File resultsDir = new File(
+                RDL_Files.getDir(),
+                "DOI_" + index);
+        File resultFile;
+        resultFile = new File(
+                resultsDir,
+                "out.txt");
+        result = Generic_StaticIO.getPrintWriter(resultFile, false);
+        return result;
     }
 
     /**
@@ -290,24 +291,20 @@ public class Scraper {
      * @param searchResult
      * @return
      */
-    public HashMap<String, String> getDocuments(
+    public HashMap<String, Object[]> getResults(
+            int index,
             HashMap<String, String> searchResult,
             boolean useOnlyCachedFiles) {
-        HashMap<String, String> result;
-        result = new HashMap<String, String>();
+        HashMap<String, Object[]> result;
+        result = new HashMap<String, Object[]>();
         Iterator<String> ite2;
         Iterator<String> ite;
         ite = searchResult.keySet().iterator();
         while (ite.hasNext()) {
             s_URL = ite.next();
-            TreeSet<String> HTML;
-            HTML = getAndFormatDocument(useOnlyCachedFiles);
-            ite2 = HTML.iterator();
-            while (ite2.hasNext()) {
-                System.out.println(ite2.next());
-            }
-            //result.put(s_URL, HTML);
-            result.put(s_URL, "");
+            Object[] parsedDocument;
+            parsedDocument = getAndParseDocument(index, useOnlyCachedFiles);
+            result.put(s_URL, parsedDocument);
         }
         return result;
     }
@@ -336,9 +333,9 @@ public class Scraper {
                 result.put(url, title);
             }
         } catch (UnsupportedEncodingException ex) {
-            Logger.getLogger(Scraper.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
-            Logger.getLogger(Scraper.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
         }
         return result;
     }
@@ -388,28 +385,10 @@ public class Scraper {
     private HashSet<Future> getResult(boolean restart)
             throws IOException {
         HashSet<Future> result = new HashSet<Future>();
-        Run run = new Run(
+        RDL_Run run = new RDL_Run(
                 this, restart);
         result.add(getExecutorService().submit(run));
         return result;
-    }
-
-//    @Deprecated
-//    public String getLowerCase(String upperCase) {
-//        return Generic_StaticString.getLowerCase(upperCase);
-//    }
-    public void writeHouseprices(
-            PrintWriter pw,
-            boolean useOnlyCachedFiles
-    ) {
-        TreeSet<String> prices = getAndFormatDocument(useOnlyCachedFiles);
-        Iterator aIterator = prices.iterator();
-        while (aIterator.hasNext()) {
-            pw.write((String) aIterator.next());
-            pw.println();
-        }
-        pw.flush();
-        //System.out.println( "Done " + _URLString );
     }
 
     /**
@@ -418,27 +397,67 @@ public class Scraper {
      * @param tFirstPartOfPostcode
      * @return number of records
      */
-    public int writeHouseprices(
+    public int writeResults(
+            //int index,
             PrintWriter outPW,
             PrintWriter logPW,
             PrintWriter sharedLogPW,
             boolean useOnlyCachedFiles) {
-        TreeSet<String> prices = getAndFormatDocument(useOnlyCachedFiles);
-//        sharedLogPW.print('.');
-//        sharedLogPW.flush();
-        if (prices.isEmpty()) {
-            logPW.println(s_URL + " 0 Records");
-            logPW.flush();
-            return 0;
-        } else {
-            Iterator aIterator = prices.iterator();
-            while (aIterator.hasNext()) {
-                outPW.write((String) aIterator.next());
-                outPW.println();
+        int index = 1; // This is a severely bad hack!
+        Object[] results = getAndParseDocument(index, useOnlyCachedFiles);
+        outPW.write((String) results[0]);
+        outPW.write((String) results[1]);
+        ArrayList<String[]> links;
+        links = (ArrayList<String[]>) results[2];
+        Iterator<String[]> ite;
+        ite = links.iterator();
+        String[] linkss;
+        while (ite.hasNext()) {
+            linkss = ite.next();
+            outPW.write(linkss[0] + ", " + linkss[1] + ", " + linkss[2]);
+        }
+        outPW.println();
+        outPW.flush();
+        return 1;
+    }
+
+    public void writeResults(PrintWriter pw, HashMap<String, Object[]> results) {
+        Iterator<String> ite;
+        ite = results.keySet().iterator();
+        String url;
+        Object[] urlResult;
+        while (ite.hasNext()) {
+            url = ite.next();
+            urlResult = results.get(url);
+            pw.println(url);
+            if (urlResult != null) {
+                //System.out.println((String) urlResult[0]);
+                if (urlResult[1] != null) {
+                    pw.println((String) urlResult[1]);
+                }
+                ArrayList<String[]> links;
+                links = (ArrayList<String[]>) urlResult[2];
+                pw.println("<links>");
+                if (links.size() == 0) {
+                    pw.println("No " + s_DOIWithResolver + " links.");
+                } else {
+                    Iterator<String[]> ite2;
+                    ite2 = links.iterator();
+                    String[] linkss;
+                    while (ite2.hasNext()) {
+                        linkss = ite2.next();
+                        pw.println("<link>");
+                        pw.println(linkss[0]);
+                        pw.print(linkss[1]);
+                        pw.println(linkss[2]);
+                        pw.println("</link>");
+                    }
+                }
+                        pw.println("</links>");
+            } else {
+                pw.println("No Result");
             }
-            outPW.flush();
-            logPW.println(s_URL + " " + prices.size() + " Records");
-            return prices.size();
+                pw.println();
         }
     }
 
@@ -511,41 +530,29 @@ public class Scraper {
 
     /**
      *
-     * @return
+     * @param useOnlyCachedFiles
+     * @return Object[] result where: result[0] is a String representation of
+     * the pdfFile; result[1] is a String declaring whether the pdfFile contains
+     * s_DOI; result[2] is an ArrayList<String[]> containing details of the
+     * links in the pdfFile that are explicitly marked up as links.
      */
-    public TreeSet<String> getAndFormatDocument(boolean useOnlyCachedFiles) {
-        TreeSet<String> result = new TreeSet<String>();
+    public Object[] getAndParseDocument(int index, boolean useOnlyCachedFiles) {
+        Object[] result;
+        result = null;
         HttpURLConnection connection;
         BufferedReader br;
         String line;
-        File pdfDir = null;
         File pdfFile = null;
         if (s_URL.endsWith(".pdf")) {
-            String[] split;
-            split = s_URL.split("/");
-            String filename;
-            filename = split[split.length - 1];
-            String dirname;
-            dirname = s_URL.replace(":", "_");
-            dirname = dirname.replace("/", "_");
-            pdfDir = new File(
-                    outDir,
-                    dirname);
-            if (!pdfDir.exists()) {
-                pdfDir.mkdirs();
-            }
-            pdfFile = new File(
-                    pdfDir,
-                    filename);
+            pdfFile = getFile(index);
         }
         if (useOnlyCachedFiles) {
             if (s_URL.endsWith(".pdf")) {
                 if (pdfFile.exists()) {
-                    String[] formattedPDF = null;
                     try {
-                        formattedPDF = formatPDF(pdfFile);
+                        result = parsePDF(pdfFile);
                     } catch (IOException ex) {
-                        Logger.getLogger(Scraper.class.getName()).log(Level.SEVERE, null, ex);
+                        Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
             } else {
@@ -624,7 +631,7 @@ public class Scraper {
                     outputStream.close();
                     inputStream.close();
 
-                    String[] s = formatPDF(pdfFile);
+                    result = parsePDF(pdfFile);
 
 //                Object[] parsedPDF;
 //                parsedPDF = ParsePDF.parseWithTika(fis);
@@ -639,6 +646,7 @@ public class Scraper {
 //               }
                 } else {
                     System.out.println("Not a PDF maybe this is HTML...");
+                    System.out.println(contentType);
                 }
 
 //            br = new BufferedReader(
@@ -697,17 +705,29 @@ public class Scraper {
         return result;
     }
 
-    public String[] formatPDF(File pdfFile) throws FileNotFoundException, IOException {
-        String[] result;
-        result = new String[2];
-        result[0] = ParsePDF.parseToString(pdfFile);
-        if (result[0].contains(s_UniversityOfLeedsDataCiteDOIPrefix)) {
+    /**
+     *
+     * @param pdfFile
+     * @return Object[] result where: result[0] is a String representation of
+     * the pdfFile; result[1] is a String declaring whether the pdfFile contains
+     * s_DOI; result[2] is an ArrayList<String[]> containing details of the
+     * links in the pdfFile that are explicitly marked up as links.
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
+    public Object[] parsePDF(File pdfFile) throws FileNotFoundException, IOException {
+        Object[] result;
+        result = new Object[3];
+        String pdfAsAString;
+        pdfAsAString = RDL_ParsePDF.parseToString(pdfFile);
+        result[0] = pdfAsAString;
+        if (pdfAsAString.contains(s_UniversityOfLeedsDataCiteDOIPrefix)) {
             result[1] = "Paper contains " + s_UniversityOfLeedsDataCiteDOIPrefix;
             System.out.println(result[1]);
-            if (result[0].contains(s_DOI)) {
+            if (pdfAsAString.contains(s_DOI)) {
                 result[1] = "Paper contains " + s_DOI;
                 System.out.println(result[1]);
-                if (result[0].contains(s_DOIWithResolver)) {
+                if (pdfAsAString.contains(s_DOIWithResolver)) {
                     result[1] = "Paper contains " + s_DOIWithResolver;
                     System.out.println(result[1]);
                 }
@@ -715,6 +735,18 @@ public class Scraper {
         } else {
             result[1] = "Paper does not contain " + s_UniversityOfLeedsDataCiteDOIPrefix;
             System.out.println(result[1]);
+        }
+        FileInputStream fis;
+        fis = Generic_StaticIO.getFileInputStream(pdfFile);
+        try {
+            result[2] = RDL_ParsePDF.parseForLinks(
+                    pdfFile,
+                    s_UniversityOfLeedsDataCiteDOIPrefix,
+                    fis);
+        } catch (TikaException ex) {
+            Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SAXException ex) {
+            Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
         }
         return result;
     }
@@ -861,18 +893,27 @@ public class Scraper {
         return sharedLogFile;
     }
 
-    protected HashMap<String, File> files;
+    protected HashMap<Integer, HashMap<String, File>> files;
 
-    protected HashMap<String, File> getFiles() {
+    protected HashMap<Integer, HashMap<String, File>> getFiles() {
         if (files == null) {
-            files = new HashMap<String, File>();
+            files = new HashMap<Integer, HashMap<String, File>>();
         }
         return files;
     }
 
-    public File getFile() {
+    public File getFile(int index) {
         File result;
         String[] split;
+        HashMap<Integer, HashMap<String, File>> filess;
+        filess = getFiles();
+        HashMap<String, File> files;
+        if (filess.containsKey(index)) {
+            files = filess.get(index);
+        } else {
+            files = new HashMap<String, File>();
+            filess.put(index, files);
+        }
         if (files.containsKey(s_URL)) {
             result = files.get(s_URL);
         } else {
@@ -883,7 +924,10 @@ public class Scraper {
             dirname = s_URL.replace(":", "_");
             dirname = dirname.replace("/", "_");
             File dir = new File(
-                    outDir,
+                    RDL_Files.getDir(),
+                    "DOI_" + index);
+            dir = new File(
+                    dir,
                     dirname);
             if (!dir.exists()) {
                 dir.mkdirs();

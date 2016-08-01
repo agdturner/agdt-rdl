@@ -26,13 +26,10 @@ package uk.ac.leeds.ccg.andyt.rdl.web;
 import java.util.Iterator;
 import java.util.TreeSet;
 
-/**
- * Class for formatting postcodes of the an_naa format.
- */
-public class Run extends AbstractRun {
+public class RDL_Run extends RDL_RunAbstract {
 
-    public Run(
-            Scraper s,
+    public RDL_Run(
+            RDL_Scraper s,
             boolean restart) {
         init(s, restart);
     }
@@ -73,19 +70,19 @@ public class Run extends AbstractRun {
                             int debug = 1;
                         } else {
                             checkRequestRate();
-                            if (s.isReturningOutcode()) {
-                                _int0 = s.writeHouseprices(
+                            if (scraper.isReturningOutcode()) {
+                                _int0 = scraper.writeResults(
                                         outPR,
                                         logPR,
                                         sharedLogPR,
-                                        s.useOnlyCachedFiles);
+                                        scraper.useOnlyCachedFiles);
                                 counter++;
                                 numberOfHousepriceRecords += _int0;
                                 if (_int0 > 0) {
                                     numberOfPostcodesWithHousepriceRecords++;
                                 }
                             } else {
-                                Scraper.updateLog(
+                                RDL_Scraper.updateLog(
                                         logPR,
                                         sharedLogPR);
                             }
@@ -114,19 +111,19 @@ public class Run extends AbstractRun {
         int numberOfDOIRecordsWithLinkBackPublications = 0;
         for (n0 = 0; n0 < 10; n0++) {
             checkRequestRate();
-            if (s.isReturningOutcode()) {
-                _int0 = s.writeHouseprices(
+            if (scraper.isReturningOutcode()) {
+                _int0 = scraper.writeResults(
                         outPR,
                         logPR,
                         sharedLogPR,
-                        s.useOnlyCachedFiles);
+                        scraper.useOnlyCachedFiles);
                 counter++;
                 numberOfDOIRecords += _int0;
                 if (_int0 > 0) {
                     numberOfDOIRecordsWithLinkBackPublications++;
                 }
             } else {
-                s.updateLog(
+                scraper.updateLog(
                         logPR,
                         sharedLogPR);
             }
