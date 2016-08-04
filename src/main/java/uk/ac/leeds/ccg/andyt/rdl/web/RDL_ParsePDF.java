@@ -181,39 +181,42 @@ public class RDL_ParsePDF {
         //schema = new XMPSchema();
         //List<String> XMPBagOrSeqList;
         //XMPBagOrSeqList = getXMPBagOrSeqList(XMPSchema schema, String name) {
-        PDDocument tPDDocument;
-        tPDDocument = PDDocument.load(f);
-        COSDocument tCOSDocument;
-        tCOSDocument = tPDDocument.getDocument();
+        
+//        PDDocument tPDDocument;
+//        tPDDocument = PDDocument.load(f);
+//        COSDocument tCOSDocument;
+//        tCOSDocument = tPDDocument.getDocument();
+        
 //        String header;
 //        header = tCOSDocument.getHeaderString();
 //        System.out.println(header);
 
-        PDDocumentCatalog tPDDocumentCatalog;
-        tPDDocumentCatalog = tPDDocument.getDocumentCatalog();
-        PDDocumentNameDictionary tPDDocumentNameDictionary;
-        tPDDocumentNameDictionary = tPDDocumentCatalog.getNames();
+//        PDDocumentCatalog tPDDocumentCatalog;
+//        tPDDocumentCatalog = tPDDocument.getDocumentCatalog();
+//        PDDocumentNameDictionary tPDDocumentNameDictionary;
+//        tPDDocumentNameDictionary = tPDDocumentCatalog.getNames();
+        
 //        COSDictionary tCOSDictionary;
 //        tCOSDictionary = tPDDocumentNameDictionary.getCOSDictionary();
         //tCOSDictionary.
 //        PDPageNode tPDPageNode;
 //        tPDPageNode = tPDDocumentCatalog.getPages();
 
-        List<COSObject> tCOSObjects;
-        tCOSObjects = tCOSDocument.getObjects();
-        int n;
-        n = tCOSObjects.size();
-        System.out.println(n);
-        COSObject aCOSObject;
-        String s;
-        for (int i = 0; i < n; i++) {
-            aCOSObject = tCOSObjects.get(i);
-            s = aCOSObject.toString();
-            System.out.println(s);
-        }
+//        List<COSObject> tCOSObjects;
+//        tCOSObjects = tCOSDocument.getObjects();
+//        int n;
+//        n = tCOSObjects.size();
+//        System.out.println(n);
+//        COSObject aCOSObject;
+//        String s;
+//        for (int i = 0; i < n; i++) {
+//            aCOSObject = tCOSObjects.get(i);
+//            s = aCOSObject.toString();
+//            System.out.println(s);
+//        }
 
-        XMPMetadata tXMPMetadata;
-        tXMPMetadata = getXMPMetadata(tPDDocument);
+//        XMPMetadata tXMPMetadata;
+//        tXMPMetadata = getXMPMetadata(tPDDocument);
 
 //        Document XMPDocument;
 //        XMPDocument = tXMPMetadata.getXMPDocument();

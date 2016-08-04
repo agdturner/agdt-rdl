@@ -39,6 +39,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -88,12 +89,10 @@ public class RDL_Scraper {
     String charset = "UTF-8";
     String search;
     String userAgent = "RDL DOI Checker 0.0.1 (+http://www.geog.leeds.ac.uk/people/a.turner/src/...)";
+    PrintWriter pwOut;
 
     private static final int BUFFER_SIZE = 4096;
 
-    /**
-     * Creates a new instance of ZooplaHousepriceScraper
-     */
     public RDL_Scraper() {
         //startTime = System.currentTimeMillis();
     }
@@ -149,9 +148,11 @@ public class RDL_Scraper {
         double permittedConnectionsPerHour = 20000;
         permittedConnectionRate = permittedConnectionsPerHour / Generic_Time.MilliSecondsInHour;
         connectionCount = 0;
+        initOutputAndLogFiles(args);
+
         sharedLogFile = new File(
                 args[0],
-                "log");
+                "log.txt");
         try {
             getSharedLogFile().createNewFile();
         } catch (IOException ex) {
@@ -159,9 +160,28 @@ public class RDL_Scraper {
         }
         getSharedLogFile().deleteOnExit();
         directory = new File(args[0]);
-        RDL_Files.setDir(new File(
+        File mainOutputDir;
+        mainOutputDir = new File(
                 directory,
-                "out"));
+                "out");
+        RDL_Files.setDir(mainOutputDir);
+        mainOutputDir = new File(
+                directory,
+                "logs");
+        if (!mainOutputDir.exists()) {
+            mainOutputDir.mkdirs();
+            mainOutputDir = Generic_StaticIO.initialiseArchive(mainOutputDir, 10);
+        } else {
+            mainOutputDir = Generic_StaticIO.addToArchive(mainOutputDir, 10);
+        }
+        File mainOutputFile;
+        mainOutputFile = new File(
+                mainOutputDir,
+                "log.txt");
+
+        pwOut = Generic_StaticIO.getPrintWriter(
+                mainOutputFile,
+                false);
         s_HipertyTipperty = "http://";
         s_Resolver = "doi.org";
         s_UniversityOfLeedsDataCiteDOIPrefix = "10.5518";
@@ -182,10 +202,66 @@ public class RDL_Scraper {
         useOnlyCachedFiles = false; // This will pull files from the web and check if they are different from before and use the most recent file.
         int imin; // the min index of the data in our repository.
         int imax; // the max index of the data in our repository.
-        imin = 11;
-        imax = 47;
+//        imin = 1;
+//        imax = 3;
+//        runSearch(imin, imax, useOnlyCachedFiles);
+//        imin = 5;
+//        imax = 25;
+//        runSearch(imin, imax, useOnlyCachedFiles);
+//        imin = 26;
+//        imax = 38;
+//        runSearch(imin, imax, useOnlyCachedFiles);
+//        imin = 40;
+//        imax = 45;
+//        runSearch(imin, imax, useOnlyCachedFiles);
+//        imin = 46; // 46 is embargoed!
+//        imax = 46;
+//        runSearch(imin, imax, useOnlyCachedFiles);
+        imin = 56;
+        imax = 65;
         runSearch(imin, imax, useOnlyCachedFiles);
         // </fullMonty>
+        pwOut.close();
+    }
+
+    public void initOutputAndLogFiles(String[] args) {
+        sharedLogFile = new File(
+                args[0],
+                "log");
+        try {
+            getSharedLogFile().createNewFile();
+        } catch (IOException ex) {
+            Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        getSharedLogFile().deleteOnExit();
+        directory = new File(args[0]);
+        File mainOutputDir;
+        mainOutputDir = new File(
+                directory,
+                "out");
+        RDL_Files.setDir(mainOutputDir);
+        mainOutputDir = new File(
+                directory,
+                "logs");
+        if (!mainOutputDir.exists()) {
+            mainOutputDir.mkdirs();
+        }
+        mainOutputDir = Generic_StaticIO.initialiseArchive(mainOutputDir, 10);
+        if (!mainOutputDir.exists()) {
+            mainOutputDir.mkdirs();
+        }
+        File mainOutputFile;
+        mainOutputFile = new File(
+                mainOutputDir,
+                "log.txt");
+        try {
+            mainOutputFile.createNewFile();
+        } catch (IOException ex) {
+            Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        pwOut = Generic_StaticIO.getPrintWriter(
+                mainOutputFile,
+                false);
     }
 
     public void runTest(int index, boolean useOnlyCachedFiles) {
@@ -216,6 +292,7 @@ public class RDL_Scraper {
     }
 
     public void runSearch(int imin, int imax, boolean useOnlyCachedFiles) {
+        pwOut.println("Run a search from " + imin + " to " + imax + " useOnlyCachedFiles = " + useOnlyCachedFiles);
         try {
             // index of the dataset DOI to test
             for (int index = imin; index <= imax; index++) {
@@ -228,8 +305,8 @@ public class RDL_Scraper {
                 search = "\"" + s_DOIWithResolver + "\"";
 
                 PrintWriter pw = null;
-                    pw = getResultsPrintWriter(index);
-                    
+                pw = getResultsPrintWriter(index);
+
                 HashMap<String, String> searchResult;
                 searchResult = getSearchResult();
                 if (!searchResult.isEmpty()) {
@@ -240,9 +317,9 @@ public class RDL_Scraper {
 //                    boolean restart = false;
 //                    getData(restart);
                 } else {
-                   pw.println("No search result for search " + search);
+                    pw.println("No search result for search " + search);
                 }
-        pw.close();
+                pw.close();
             }
         } catch (Exception e) {
             e.printStackTrace(System.err);
@@ -305,9 +382,9 @@ public class RDL_Scraper {
         ite = searchResult.keySet().iterator();
         while (ite.hasNext()) {
             s_URL = ite.next();
-            Object[] parsedDocument;
-            parsedDocument = getAndParseDocument(index, useOnlyCachedFiles);
-            result.put(s_URL, parsedDocument);
+            Object[] partResult;
+            partResult = getAndParseDocument(index, useOnlyCachedFiles);
+            result.put(s_URL, partResult);
         }
         return result;
     }
@@ -321,13 +398,18 @@ public class RDL_Scraper {
     public HashMap<String, String> getSearchResult() {
         HashMap<String, String> result;
         result = new HashMap<String, String>();
-        try {
-            Elements links;
-            links = Jsoup.connect(google + URLEncoder.encode(search, charset)).userAgent(userAgent).get().select(".g>.r>a");
+        //try {
+        Elements links;
+        links = getLinks(0);
+        if (links != null) {
             for (Element link : links) {
                 String title = link.text();
                 String url = link.absUrl("href"); // Google returns URLs in format "http://www.google.com/url?q=<url>&sa=U&ei=<someKey>".
-                url = URLDecoder.decode(url.substring(url.indexOf('=') + 1, url.indexOf('&')), "UTF-8");
+                try {
+                    url = URLDecoder.decode(url.substring(url.indexOf('=') + 1, url.indexOf('&')), "UTF-8");
+                } catch (UnsupportedEncodingException ex) {
+                    Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
+                }
                 if (!url.startsWith("http")) {
                     continue; // Ads/news/etc.
                 }
@@ -335,8 +417,29 @@ public class RDL_Scraper {
                 System.out.println("URL: " + url);
                 result.put(url, title);
             }
+        }
+        return result;
+    }
+
+    public Elements getLinks(int counter) {
+        Elements result = null;
+        try {
+            result = Jsoup.connect(google + URLEncoder.encode(search, charset)).userAgent(userAgent).get().select(".g>.r>a");
         } catch (UnsupportedEncodingException ex) {
             Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SocketTimeoutException e) {
+            try {
+                this.wait(100L);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            counter++;
+            System.out.println(counter + " times trying to getLinks in RDL_Scraper.");
+            if (counter < 10) {
+                result = getLinks(counter);
+            } else {
+                System.out.println("Giving up trying to getLinks in RDL_Scraper after " + counter + " times.");
+            }
         } catch (IOException ex) {
             Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -456,11 +559,11 @@ public class RDL_Scraper {
                         pw.println("</link>");
                     }
                 }
-                        pw.println("</links>");
+                pw.println("</links>");
             } else {
                 pw.println("No Result");
             }
-                pw.println();
+            pw.println();
         }
     }
 
@@ -547,7 +650,7 @@ public class RDL_Scraper {
         String line;
         File pdfFile = null;
         if (s_URL.endsWith(".pdf")) {
-            pdfFile = getFile(index);
+            pdfFile = getFile(index, "");
         }
         if (useOnlyCachedFiles) {
             if (s_URL.endsWith(".pdf")) {
@@ -566,18 +669,8 @@ public class RDL_Scraper {
                 connection = getOpenHttpURLConnection();
                 int responseCode = connection.getResponseCode();
                 if (responseCode != 200) {
-                    if (responseCode == 404) {
-                        return result;
-                    }
-                    String message = s_URL + " connection.getResponseCode() "
-                            + responseCode
-                            + "see http://en.wikipedia.org/wiki/List_of_HTTP_status_codes";
-                    if (responseCode == 301 || responseCode == 302 || responseCode == 303
-                            || responseCode == 403) {
-                        message += "and http://en.wikipedia.org/wiki/HTTP_";
-                        message += Integer.toString(responseCode);
-                    }
-                    throw new Error(message);
+                    handleNon200ResponseCodes(responseCode);
+                    return result;
                 }
                 Map<String, List<String>> headerFields;
                 headerFields = connection.getHeaderFields();
@@ -625,13 +718,17 @@ public class RDL_Scraper {
 
                 if (contentType.equalsIgnoreCase("application/pdf")) {
                     // Store pdf
-                    FileOutputStream outputStream = new FileOutputStream(pdfFile);
+                    if (pdfFile == null) {
+                        pdfFile = getFile(index, ".pdf");
+                    }
+                    FileOutputStream fos;
+                    fos = new FileOutputStream(pdfFile);
                     int bytesRead = -1;
                     byte[] buffer = new byte[BUFFER_SIZE];
                     while ((bytesRead = inputStream.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, bytesRead);
+                        fos.write(buffer, 0, bytesRead);
                     }
-                    outputStream.close();
+                    fos.close();
                     inputStream.close();
 
                     result = parsePDF(pdfFile);
@@ -706,6 +803,30 @@ public class RDL_Scraper {
             }
         }
         return result;
+    }
+
+    public void handleNon200ResponseCodes(int responseCode) {
+        String message = s_URL + " connection.getResponseCode() "
+                + responseCode + "\n"
+                + "See: \n"
+                + "http://en.wikipedia.org/wiki/List_of_HTTP_status_codes" + "\n";
+        if (responseCode == 301 || responseCode == 302 || responseCode == 303
+                || responseCode == 403) {
+            message += "http://en.wikipedia.org/wiki/HTTP_";
+            message += Integer.toString(responseCode);
+            if (responseCode == 403) {
+                message += " A web server may or may not return a 403 "
+                        + "Forbidden HTTP status code in response to a "
+                        + "request from a client for a web page or resource "
+                        + "to indicate that the server can be reached and "
+                        + "understood the request, but refuses to take any "
+                        + "further action. Status code 403 responses are the "
+                        + "result of the web server being configured to deny "
+                        + "access, for some reason, to the requested resource "
+                        + "by the client.";
+            }
+        }
+        System.err.println(message);
     }
 
     /**
@@ -905,7 +1026,7 @@ public class RDL_Scraper {
         return files;
     }
 
-    public File getFile(int index) {
+    public File getFile(int index, String suffix) {
         File result;
         String[] split;
         HashMap<Integer, HashMap<String, File>> filess;
@@ -922,10 +1043,11 @@ public class RDL_Scraper {
         } else {
             split = s_URL.split("/");
             String filename;
-            filename = split[split.length - 1];
+            filename = split[split.length - 1] + suffix;
             String dirname;
             dirname = s_URL.replace(":", "_");
             dirname = dirname.replace("/", "_");
+            dirname += suffix;
             File dir = new File(
                     RDL_Files.getDir(),
                     "DOI_" + index);
