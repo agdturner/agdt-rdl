@@ -1,32 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>uk.ac.leeds.ccg.andyt</groupId>
-    <artifactId>agdt-rdl</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <artifactId>agdt-java-project-ResearchDataLeeds</artifactId>
+    <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+    
+    <name>agdt-java-project-ResearchDataLeeds</name>
+    <url>https://github.com/agdturner/agdt-java-project-ResearchDataLeeds</url>
+    <description>A Java project for processing data for the University of Leeds Research Data Management Service known as Research Data Leeds.</description>
+    <scm>
+        <url>git@github.com:agdturner/agdt-java-project-ResearchDataLeeds.git</url>
+        <connection>scm:git:git@github.com:agdturner/agdt-java-project-ResearchDataLeeds.git</connection>
+        <developerConnection>scm:git:git@github.com:agdturner/agdt-java-project-ResearchDataLeeds</developerConnection>
+    </scm>
+    <licenses>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>https://github.com/agdturner/agdt-java-project-ResearchDataLeeds/LICENSE.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <organization>
+        <name>Centre for Computational Geography, University of Leeds</name>
+        <url>http://www.ccg.leeds.ac.uk/</url>
+    </organization>
+    <developers>
+        <developer>
+            <id>agdturner</id>
+            <name>Andy Turner</name>
+            <email>a.g.d.turner@leeds.ac.uk</email>
+            <organization>Centre for Computational Geography, University of Leeds</organization>
+            <organizationUrl>http://www.ccg.leeds.ac.uk</organizationUrl>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
+    
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
-        <generic.version>1.0-SNAPSHOT</generic.version>
-        <!--
-        <maven.project.info.reports.plugin.version>2.9</maven.project.info.reports.plugin.version>
-        -->
+        <!--<maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>-->
+        <agdt-java-generic.version>1.0-SNAPSHOT</agdt-java-generic.version>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
     </properties>
     
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.10</version>
-            <!--<version>3.8.1</version>-->
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>uk.ac.leeds.ccg.andyt</groupId>
-            <artifactId>generic</artifactId>
-            <version>${generic.version}</version>
+            <artifactId>agdt-java-generic</artifactId>
+            <version>${agdt-java-generic.version}</version>
         </dependency>
         <!--
         <dependency>
@@ -49,12 +81,13 @@
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
-            <version>1.12</version>
+            <version>[1.22,)</version>
+            <!--<version>1.12</version>-->
         </dependency>
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
-            <version>2.0.0</version>
+            <version>[2.0.15,)</version>
             <!--
             <version>1.8.11</version>
             <version>2.0.0</version>
@@ -95,6 +128,7 @@
             <version>2.0.0</version>
             -->
         </dependency>
+        <!--
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
@@ -110,6 +144,7 @@
             <artifactId>bcpkix-jdk15on</artifactId>
             <version>1.54</version>
         </dependency>
+        -->
         <!--
         <dependency>
             <groupId>net.sf.jabref</groupId>
@@ -122,27 +157,51 @@
             <artifactId>poi</artifactId>
             <version>3.14</version>
         </dependency>
+        <!--
+        <dependency>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <version>${maven-shade-plugin.version}</version>
+        </dependency>
+        -->
     </dependencies>
     
     <repositories>
-        <repository>
-            <id>generic</id>
-            <name>GitHub agdturner generic Repository</name>
-            <url>https://github.com/agdturner/generic</url>
-        </repository>
-        <repository>
-            <id>maven2-repository.dev.java.net</id>
-            <name>Java.net repository</name>
-            <url>http://download.java.net/maven/2</url>
-        </repository>
         <!--
         <repository>
-            <id>IroniaCorp</id>
-            <url>http://www.ironiacorp.com/repo/maven2</url>
+            <id>agdt-java-generic</id>
+            <name>GitHub agdturner agdt-java-generic Repository</name>
+            <url>https://github.com/agdturner/agdt-java-generic/tree/master/target/mvn-repo/uk/ac/leeds/ccg/andyt/agdt-java-generic</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
         -->
     </repositories>
     
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.0</version>
+                <configuration>
+                    <compilerArgs>
+                        <arg>-verbose</arg>
+                        <arg>-Xlint:all,-options,-path</arg>
+                    </compilerArgs>
+                    <fork>true</fork>
+                    <meminitial>128m</meminitial>
+                    <maxmem>512m</maxmem>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <!--
     <build>
         <plugins>
             <plugin>
@@ -167,15 +226,62 @@
                     <target>1.6</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven-shade-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>launcher</shadedClassifierName>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Main-Class>uk.ac.leeds.ccg.andyt.rdl.web.RDL_Scraper</Main-Class>
+                                    </manifestEntries>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-
+    -->
+    
+    <!--
     <pluginRepositories>
         <pluginRepository>
             <id>onejar-maven-plugin.googlecode.com</id>
             <url>http://onejar-maven-plugin.googlecode.com/svn/mavenrepo</url>
         </pluginRepository>
     </pluginRepositories>
+    -->
+    
+    <distributionManagement>
+        <!-- This creates a maven artifact in the target directory which can 
+        then be added to a repository. -->
+        <repository>
+            <id>internal</id>
+            <url>file://${project.build.directory}/mvn-repo</url>
+        </repository>
+    </distributionManagement>
     <!--
     <distributionManagement>
         <repository>
