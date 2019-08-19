@@ -57,6 +57,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.tika.exception.TikaException;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.xml.sax.SAXException;
 import uk.ac.leeds.ccg.andyt.generic.core.Generic_Environment;
@@ -106,7 +107,7 @@ public class RDL_Scraper extends RDL_Object {
         if (args.length == 0) {
             args = new String[1];
             // Defaults output directory.
-            args[0] = "C:/Users/geoagdt/projects/RDL";
+            args[0] = "C:/Users/geoagdt/src/agdt/java/projects/agdt-java-project-ResearchDataLeeds/data";
         }
         new RDL_Scraper(new RDL_Environment(new Generic_Environment())).run(args);
     }
@@ -150,10 +151,7 @@ public class RDL_Scraper extends RDL_Object {
         permittedConnectionRate = permittedConnectionsPerHour / Generic_Time.MilliSecondsInHour;
         connectionCount = 0;
         initOutputAndLogFiles(args);
-
-        sharedLogFile = new File(
-                args[0],
-                "log.txt");
+        sharedLogFile = new File(args[0], "log.txt");
         try {
             getSharedLogFile().createNewFile();
         } catch (IOException ex) {
@@ -162,13 +160,9 @@ public class RDL_Scraper extends RDL_Object {
         getSharedLogFile().deleteOnExit();
         directory = new File(args[0]);
         File mainOutputDir;
-        mainOutputDir = new File(
-                directory,
-                "out");
+        mainOutputDir = new File(directory, "out");
         RDL_Files.setDir(mainOutputDir);
-        mainOutputDir = new File(
-                directory,
-                "logs");
+        mainOutputDir = new File(directory, "logs");
         if (!mainOutputDir.exists()) {
             mainOutputDir.mkdirs();
             mainOutputDir = env.ge.io.initialiseArchive(mainOutputDir, 10);
@@ -176,9 +170,7 @@ public class RDL_Scraper extends RDL_Object {
             mainOutputDir = env.ge.io.addToArchive(mainOutputDir, 10);
         }
         File mainOutputFile;
-        mainOutputFile = new File(
-                mainOutputDir,
-                "log.txt");
+        mainOutputFile = new File(mainOutputDir, "log.txt");
 
         pwOut = env.ge.io.getPrintWriter(mainOutputFile, false);
         s_HipertyTipperty = "http://";
@@ -377,7 +369,7 @@ public class RDL_Scraper extends RDL_Object {
     public HashMap<String, String> getSearchResult() {
         HashMap<String, String> r = new HashMap<>();
         //try {
-        Elements links = getLinks(0);
+        Elements links = getLinks();
         if (links != null) {
             links.forEach((link) -> {
                 String title = link.text();
@@ -398,10 +390,22 @@ public class RDL_Scraper extends RDL_Object {
         return r;
     }
 
-    public Elements getLinks(int counter) {
-        Elements result = null;
+    public Elements getLinks() {
+        Elements r = null;
         try {
-            result = Jsoup.connect(google + URLEncoder.encode(search, charset)).userAgent(userAgent).get().select(".g>.r>a");
+            String url = google + URLEncoder.encode(search, charset);
+            System.out.println(url);
+            Document doc = Jsoup.connect(url).userAgent(userAgent).get();
+            
+            System.out.println(doc.toString());
+            //r = doc.select(".g>.r>a");
+            r = doc.select("a[href]");
+            //r = doc.getElementsByClass("rc");
+            if (r.size() > 0) {
+                // Result!
+                int debug = 1;
+            }
+
         } catch (UnsupportedEncodingException ex) {
             Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
         } catch (SocketTimeoutException e) {
@@ -410,17 +414,10 @@ public class RDL_Scraper extends RDL_Object {
             } catch (InterruptedException ex) {
                 Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
             }
-            counter++;
-            System.out.println(counter + " times trying to getLinks in RDL_Scraper.");
-            if (counter < 10) {
-                result = getLinks(counter);
-            } else {
-                System.out.println("Giving up trying to getLinks in RDL_Scraper after " + counter + " times.");
-            }
         } catch (IOException ex) {
             Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return result;
+        return r;
     }
 
     public void getData(
@@ -792,46 +789,47 @@ public class RDL_Scraper extends RDL_Object {
 
     /**
      *
-     * @param pdfFile
-     * @return Object[] result where: result[0] is a String representation of
-     * the pdfFile; result[1] is a String declaring whether the pdfFile contains
+     * @param pdfFile The PDF file to be parsed.
+     * @return Object[] r where:
+     * <ul>
+     * <li>r[0] is a String representation of the pdfFile</li>
+     * <li>r[1] is a String declaring whether the pdfFile contains
      * s_DOI; result[2] is an ArrayList<String[]> containing details of the
      * links in the pdfFile that are explicitly marked up as links.
      * @throws FileNotFoundException
      * @throws IOException
      */
     public Object[] parsePDF(File pdfFile) throws FileNotFoundException, IOException {
-        Object[] result;
-        result = new Object[3];
+        Object[] r = new Object[3];
         String pdfAsAString;
         pdfAsAString = RDL_ParsePDF.parseToString(pdfFile);
-        result[0] = pdfAsAString;
+        r[0] = pdfAsAString;
         if (pdfAsAString.contains(s_UniversityOfLeedsDataCiteDOIPrefix)) {
-            result[1] = "Paper contains " + s_UniversityOfLeedsDataCiteDOIPrefix;
-            System.out.println(result[1]);
+            r[1] = "Paper contains " + s_UniversityOfLeedsDataCiteDOIPrefix;
+            System.out.println(r[1]);
             if (pdfAsAString.contains(s_DOI)) {
-                result[1] = "Paper contains " + s_DOI;
-                System.out.println(result[1]);
+                r[1] = "Paper contains " + s_DOI;
+                System.out.println(r[1]);
                 if (pdfAsAString.contains(s_DOIWithResolver)) {
-                    result[1] = "Paper contains " + s_DOIWithResolver;
-                    System.out.println(result[1]);
+                    r[1] = "Paper contains " + s_DOIWithResolver;
+                    System.out.println(r[1]);
                 }
             }
         } else {
-            result[1] = "Paper does not contain " + s_UniversityOfLeedsDataCiteDOIPrefix;
-            System.out.println(result[1]);
+            r[1] = "Paper does not contain " + s_UniversityOfLeedsDataCiteDOIPrefix;
+            System.out.println(r[1]);
         }
         FileInputStream fis;
         fis = env.ge.io.getFileInputStream(pdfFile);
         try {
-            result[2] = RDL_ParsePDF.parseForLinks(
+            r[2] = RDL_ParsePDF.parseForLinks(
                     pdfFile,
                     s_UniversityOfLeedsDataCiteDOIPrefix,
                     fis);
         } catch (TikaException | SAXException ex) {
             Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return result;
+        return r;
     }
 
     public String getHTMLandFormatPropertyDetails(
