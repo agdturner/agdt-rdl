@@ -5,7 +5,6 @@
  */
 package uk.ac.leeds.ccg.andyt.rdl.conversion;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -25,10 +24,14 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
-import uk.ac.leeds.ccg.andyt.generic.io.Generic_StaticIO;
+import uk.ac.leeds.ccg.andyt.generic.core.Generic_Environment;
+import uk.ac.leeds.ccg.andyt.generic.io.Generic_IO;
+import uk.ac.leeds.ccg.andyt.rdl.core.RDL_Environment;
+import uk.ac.leeds.ccg.andyt.rdl.io.RDL_Object;
 
 /**
- * Class adapted from: http://svn.apache.org/repos/asf/poi/trunk/src/examples/src/org/apache/poi/ss/examples/ToCSV.java
+ * Class adapted from:
+ * http://svn.apache.org/repos/asf/poi/trunk/src/examples/src/org/apache/poi/ss/examples/ToCSV.java
  * Demonstrates <em>one</em> way to convert an Excel spreadsheet into a CSV
  * file. This class makes the following assumptions;
  * <list>
@@ -118,7 +121,7 @@ import uk.ac.leeds.ccg.andyt.generic.io.Generic_StaticIO;
  * marks. In addition, gave the client the ability to select how these are
  * handled, either obeying Excel's or UNIX formatting conventions.
  */
-public class RDL_XSLX2CSV {
+public class RDL_XSLX2CSV extends RDL_Object {
 
     private static String header;
 
@@ -133,6 +136,15 @@ public class RDL_XSLX2CSV {
     private static final String CSV_FILE_EXTENSION = ".csv";
     private static final String DEFAULT_SEPARATOR = ",";
 
+    public RDL_XSLX2CSV(){
+        this(new RDL_Environment(new Generic_Environment()));
+    }
+    
+    public RDL_XSLX2CSV(RDL_Environment env){
+        super(env);
+    }
+    
+    
     /**
      * Identifies that the CSV file should obey Excel's formatting conventions
      * with regard to escaping certain embedded characters - the field
@@ -627,13 +639,20 @@ public class RDL_XSLX2CSV {
     }
 
     /**
-     * The main() method contains code that demonstrates how to use the class.
-     *
      * @param args An array containing zero, one or more elements all of type
      * String. Each element will encapsulate an argument specified by the user
      * when running the program from the command prompt.
      */
     public static void main(String[] args) {
+        RDL_Environment env = new RDL_Environment(new Generic_Environment());
+        new RDL_XSLX2CSV(env).run(args);
+    }
+
+    /**
+     * The main() method contains code that demonstrates how to use the class. *
+     * @param args
+     */
+    public void run(String[] args) {
         // Check the number of arguments passed to the main method. There
         // must be two, three or four; the name of and path to either the folder
         // containing the Excel files or an individual Excel workbook that is/are
@@ -664,56 +683,61 @@ public class RDL_XSLX2CSV {
                 File headerFile = new File(
                         args[0],
                         "header.csv");
-                        //                        FileInputStream fis;
-                        //                        fis = FileInputStream(headerFile);
-                        //                       BufferedInputStream bis;
-                        //                       bis = Generic_StaticIO.getBufferedInputStream(headerFile);
+                //                        FileInputStream fis;
+                //                        fis = FileInputStream(headerFile);
+                //                       BufferedInputStream bis;
+                //                       bis = Generic_IO.getBufferedInputStream(headerFile);
                 StreamTokenizer st;
                 BufferedReader br;
-                br = Generic_StaticIO.getBufferedReader(headerFile);
+                br = env.ge.io.getBufferedReader(headerFile);
                 st = new StreamTokenizer(br);
-                Generic_StaticIO.setStreamTokenizerSyntax1(st);
+                env.ge.io.setStreamTokenizerSyntax1(st);
                 header = br.readLine();
                 dirOut.mkdir();
             }
 
-            if (args.length == 2) {
-                // Just the Source File/Folder and Destination Folder were
-                // passed to the main method.
-                converter.convertExcelToCSV(args[0], args[1]);
-            } else if (args.length == 3) {
-                // The Source File/Folder, Destination Folder and Separator
-                // were passed to the main method.
-                converter.convertExcelToCSV(args[0], args[1], args[2]);
-            } else if (args.length == 4) {
-                // The Source File/Folder, Destination Folder, Separator and
-                // Formatting Convnetion were passed to the main method.
-                converter.convertExcelToCSV(args[0], args[1],
-                        args[2], Integer.parseInt(args[3]));
-            } else {
-                // None or more than four parameters were passed so display
-                //a Usage message.
-                System.out.println("Usage: java ToCSV [Source File/Folder] "
-                        + "[Destination Folder] [Separator] [Formatting Convention]\n"
-                        + "\tSource File/Folder\tThis argument should contain the name of and\n"
-                        + "\t\t\t\tpath to either a single Excel workbook or a\n"
-                        + "\t\t\t\tfolder containing one or more Excel workbooks.\n"
-                        + "\tDestination Folder\tThe name of and path to the folder that the\n"
-                        + "\t\t\t\tCSV files should be written out into. The\n"
-                        + "\t\t\t\tfolder must exist before running the ToCSV\n"
-                        + "\t\t\t\tcode as it will not check for or create it.\n"
-                        + "\tSeparator\t\tOptional. The character or characters that\n"
-                        + "\t\t\t\tshould be used to separate fields in the CSV\n"
-                        + "\t\t\t\trecord. If no value is passed then the comma\n"
-                        + "\t\t\t\twill be assumed.\n"
-                        + "\tFormatting Convention\tOptional. This argument can take one of two\n"
-                        + "\t\t\t\tvalues. Passing 0 (zero) will result in a CSV\n"
-                        + "\t\t\t\tfile that obeys Excel's formatting conventions\n"
-                        + "\t\t\t\twhilst passing 1 (one) will result in a file\n"
-                        + "\t\t\t\tthat obeys UNIX formatting conventions. If no\n"
-                        + "\t\t\t\tvalue is passed, then the CSV file produced\n"
-                        + "\t\t\t\twill obey Excel's formatting conventions.");
-                converted = false;
+            switch (args.length) {
+                case 2:
+                    // Just the Source File/Folder and Destination Folder were
+                    // passed to the main method.
+                    converter.convertExcelToCSV(args[0], args[1]);
+                    break;
+                case 3:
+                    // The Source File/Folder, Destination Folder and Separator
+                    // were passed to the main method.
+                    converter.convertExcelToCSV(args[0], args[1], args[2]);
+                    break;
+                case 4:
+                    // The Source File/Folder, Destination Folder, Separator and
+                    // Formatting Convnetion were passed to the main method.
+                    converter.convertExcelToCSV(args[0], args[1],
+                            args[2], Integer.parseInt(args[3]));
+                    break;
+                default:
+                    // None or more than four parameters were passed so display
+                    //a Usage message.
+                    System.out.println("Usage: java ToCSV [Source File/Folder] "
+                            + "[Destination Folder] [Separator] [Formatting Convention]\n"
+                            + "\tSource File/Folder\tThis argument should contain the name of and\n"
+                            + "\t\t\t\tpath to either a single Excel workbook or a\n"
+                            + "\t\t\t\tfolder containing one or more Excel workbooks.\n"
+                            + "\tDestination Folder\tThe name of and path to the folder that the\n"
+                            + "\t\t\t\tCSV files should be written out into. The\n"
+                            + "\t\t\t\tfolder must exist before running the ToCSV\n"
+                            + "\t\t\t\tcode as it will not check for or create it.\n"
+                            + "\tSeparator\t\tOptional. The character or characters that\n"
+                            + "\t\t\t\tshould be used to separate fields in the CSV\n"
+                            + "\t\t\t\trecord. If no value is passed then the comma\n"
+                            + "\t\t\t\twill be assumed.\n"
+                            + "\tFormatting Convention\tOptional. This argument can take one of two\n"
+                            + "\t\t\t\tvalues. Passing 0 (zero) will result in a CSV\n"
+                            + "\t\t\t\tfile that obeys Excel's formatting conventions\n"
+                            + "\t\t\t\twhilst passing 1 (one) will result in a file\n"
+                            + "\t\t\t\tthat obeys UNIX formatting conventions. If no\n"
+                            + "\t\t\t\tvalue is passed, then the CSV file produced\n"
+                            + "\t\t\t\twill obey Excel's formatting conventions.");
+                    converted = false;
+                    break;
             }
         } // It is not wise to have such a wide catch clause - Exception is very // It is not wise to have such a wide catch clause - Exception is very
         // close to being at the top of the inheritance hierarchy - though it

@@ -57,15 +57,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.tika.exception.TikaException;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.xml.sax.SAXException;
-import uk.ac.leeds.ccg.andyt.generic.io.Generic_StaticIO;
-import uk.ac.leeds.ccg.andyt.generic.utilities.Generic_Execution;
-import uk.ac.leeds.ccg.andyt.generic.utilities.Generic_Time;
+import uk.ac.leeds.ccg.andyt.generic.core.Generic_Environment;
+import uk.ac.leeds.ccg.andyt.generic.execution.Generic_Execution;
+import uk.ac.leeds.ccg.andyt.generic.util.Generic_Time;
+import uk.ac.leeds.ccg.andyt.rdl.core.RDL_Environment;
 import uk.ac.leeds.ccg.andyt.rdl.io.RDL_Files;
+import uk.ac.leeds.ccg.andyt.rdl.io.RDL_Object;
 
-public class RDL_Scraper {
+public class RDL_Scraper extends RDL_Object {
 
     File directory;
     static File sharedLogFile;
@@ -93,8 +94,8 @@ public class RDL_Scraper {
 
     private static final int BUFFER_SIZE = 4096;
 
-    public RDL_Scraper() {
-        //startTime = System.currentTimeMillis();
+    public RDL_Scraper(RDL_Environment env) {
+        super(env);
     }
 
     /**
@@ -107,7 +108,7 @@ public class RDL_Scraper {
             // Defaults output directory.
             args[0] = "C:/Users/geoagdt/projects/RDL";
         }
-        new RDL_Scraper().run(args);
+        new RDL_Scraper(new RDL_Environment(new Generic_Environment())).run(args);
     }
 
     public long getTimeRunningMillis() {
@@ -170,18 +171,16 @@ public class RDL_Scraper {
                 "logs");
         if (!mainOutputDir.exists()) {
             mainOutputDir.mkdirs();
-            mainOutputDir = Generic_StaticIO.initialiseArchive(mainOutputDir, 10);
+            mainOutputDir = env.ge.io.initialiseArchive(mainOutputDir, 10);
         } else {
-            mainOutputDir = Generic_StaticIO.addToArchive(mainOutputDir, 10);
+            mainOutputDir = env.ge.io.addToArchive(mainOutputDir, 10);
         }
         File mainOutputFile;
         mainOutputFile = new File(
                 mainOutputDir,
                 "log.txt");
 
-        pwOut = Generic_StaticIO.getPrintWriter(
-                mainOutputFile,
-                false);
+        pwOut = env.ge.io.getPrintWriter(mainOutputFile, false);
         s_HipertyTipperty = "http://";
         s_Resolver = "doi.org";
         s_UniversityOfLeedsDataCiteDOIPrefix = "10.5518";
@@ -225,9 +224,7 @@ public class RDL_Scraper {
     }
 
     public void initOutputAndLogFiles(String[] args) {
-        sharedLogFile = new File(
-                args[0],
-                "log");
+        sharedLogFile = new File(args[0], "log");
         try {
             getSharedLogFile().createNewFile();
         } catch (IOException ex) {
@@ -236,17 +233,13 @@ public class RDL_Scraper {
         getSharedLogFile().deleteOnExit();
         directory = new File(args[0]);
         File mainOutputDir;
-        mainOutputDir = new File(
-                directory,
-                "out");
+        mainOutputDir = new File(directory, "out");
         RDL_Files.setDir(mainOutputDir);
-        mainOutputDir = new File(
-                directory,
-                "logs");
+        mainOutputDir = new File(directory, "logs");
         if (!mainOutputDir.exists()) {
             mainOutputDir.mkdirs();
         }
-        mainOutputDir = Generic_StaticIO.initialiseArchive(mainOutputDir, 10);
+        mainOutputDir = env.ge.io.initialiseArchive(mainOutputDir, 10);
         if (!mainOutputDir.exists()) {
             mainOutputDir.mkdirs();
         }
@@ -259,9 +252,7 @@ public class RDL_Scraper {
         } catch (IOException ex) {
             Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
         }
-        pwOut = Generic_StaticIO.getPrintWriter(
-                mainOutputFile,
-                false);
+        pwOut = env.ge.io.getPrintWriter(mainOutputFile, false);
     }
 
     public void runTest(int index, boolean useOnlyCachedFiles) {
@@ -272,7 +263,7 @@ public class RDL_Scraper {
             search = "\"" + s_DOIWithResolver + "\"";
             HashMap<String, String> searchResult;
             //searchResult = getSearchResult(); // This is for a real search.
-            searchResult = new HashMap<String, String>();
+            searchResult = new HashMap<>();
             String testurl;
             testurl = s_HipertyTipperty + "eprints.whiterose.ac.uk/87869/1/Brockway%20et%20al%202015%20China%20energy%20efficiency%20and%20decomposition.pdf";
             String testtitle;
@@ -284,9 +275,7 @@ public class RDL_Scraper {
             writeResults(getResultsPrintWriter(index), results);
 //            boolean restart = false;
 //            getData(restart);
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
-        } catch (Error e) {
+        } catch (Exception | Error e) {
             e.printStackTrace(System.err);
         }
     }
@@ -304,44 +293,36 @@ public class RDL_Scraper {
                 //s_URL = "https://www.google.co.uk/webhp?sourceid=chrome-instant&ion=1&espv=2&ie=UTF-8#q=%22doi.org%2F" + s_UniversityOfLeedsDataCiteDOIPrefix + "%2F" + s_DOISuffix + "%22";
                 search = "\"" + s_DOIWithResolver + "\"";
 
-                PrintWriter pw = null;
-                pw = getResultsPrintWriter(index);
-
-                HashMap<String, String> searchResult;
-                searchResult = getSearchResult();
-                if (!searchResult.isEmpty()) {
-                    filterSearchResult(searchResult);
-                    HashMap<String, Object[]> results;
-                    results = getResults(index, searchResult, useOnlyCachedFiles);
-                    writeResults(pw, results);
+                try (PrintWriter pw = getResultsPrintWriter(index)) {
+                    HashMap<String, String> searchResult;
+                    searchResult = getSearchResult();
+                    if (!searchResult.isEmpty()) {
+                        filterSearchResult(searchResult);
+                        HashMap<String, Object[]> results;
+                        results = getResults(index, searchResult, useOnlyCachedFiles);
+                        writeResults(pw, results);
 //                    boolean restart = false;
 //                    getData(restart);
-                } else {
-                    pw.println("No search result for search " + search);
+                    } else {
+                        pw.println("No search result for search " + search);
+                    }
                 }
-                pw.close();
             }
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
-        } catch (Error e) {
+        } catch (Exception | Error e) {
             e.printStackTrace(System.err);
         }
     }
 
     protected PrintWriter getResultsPrintWriter(int index) {
-        PrintWriter result;
-        File resultsDir = new File(
-                RDL_Files.getDir(),
-                "DOI_" + index);
-        if (!resultsDir.exists()) {
-            resultsDir.mkdirs();
+        PrintWriter r;
+        File dir = new File(RDL_Files.getDir(), "DOI_" + index);
+        if (!dir.exists()) {
+            dir.mkdirs();
         }
-        File resultFile;
-        resultFile = new File(
-                resultsDir,
-                "out.txt");
-        result = Generic_StaticIO.getPrintWriter(resultFile, false);
-        return result;
+        File f;
+        f = new File(dir, "out.txt");
+        r = env.ge.io.getPrintWriter(f, false);
+        return r;
     }
 
     /**
@@ -350,8 +331,7 @@ public class RDL_Scraper {
      * @param searchResult
      */
     public void filterSearchResult(HashMap<String, String> searchResult) {
-        HashSet<String> keep;
-        keep = new HashSet<String>();
+        HashSet<String> keep = new HashSet<>();
         Iterator<String> ite;
         ite = searchResult.keySet().iterator();
         while (ite.hasNext()) {
@@ -368,16 +348,15 @@ public class RDL_Scraper {
     /**
      * GEt and save all documents in the search results
      *
+     * @param index
      * @param searchResult
+     * @param useOnlyCachedFiles
      * @return
      */
-    public HashMap<String, Object[]> getResults(
-            int index,
-            HashMap<String, String> searchResult,
-            boolean useOnlyCachedFiles) {
+    public HashMap<String, Object[]> getResults(int index,
+            HashMap<String, String> searchResult, boolean useOnlyCachedFiles) {
         HashMap<String, Object[]> result;
-        result = new HashMap<String, Object[]>();
-        Iterator<String> ite2;
+        result = new HashMap<>();
         Iterator<String> ite;
         ite = searchResult.keySet().iterator();
         while (ite.hasNext()) {
@@ -396,29 +375,27 @@ public class RDL_Scraper {
      * values are Titles.
      */
     public HashMap<String, String> getSearchResult() {
-        HashMap<String, String> result;
-        result = new HashMap<String, String>();
+        HashMap<String, String> r = new HashMap<>();
         //try {
-        Elements links;
-        links = getLinks(0);
+        Elements links = getLinks(0);
         if (links != null) {
-            for (Element link : links) {
+            links.forEach((link) -> {
                 String title = link.text();
                 String url = link.absUrl("href"); // Google returns URLs in format "http://www.google.com/url?q=<url>&sa=U&ei=<someKey>".
+                // Ads/news/etc.
                 try {
                     url = URLDecoder.decode(url.substring(url.indexOf('=') + 1, url.indexOf('&')), "UTF-8");
                 } catch (UnsupportedEncodingException ex) {
                     Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                if (!url.startsWith("http")) {
-                    continue; // Ads/news/etc.
+                if (!(!url.startsWith("http"))) {
+                    System.out.println("Title: " + title);
+                    System.out.println("URL: " + url);
+                    r.put(url, title);
                 }
-                System.out.println("Title: " + title);
-                System.out.println("URL: " + url);
-                result.put(url, title);
-            }
+            });
         }
-        return result;
+        return r;
     }
 
     public Elements getLinks(int counter) {
@@ -454,7 +431,7 @@ public class RDL_Scraper {
         //int nThreads = 1 + (23 * 3) + (23 * 23 * 2); 
         int nThreads = 1;//256; 128;
         executorService = Executors.newFixedThreadPool(nThreads);
-        HashSet<Future> futures = new HashSet<Future>();
+        HashSet<Future> futures = new HashSet<>();
         futures.addAll(getResult(restart));
         // Wait for results then shutdown executorService
         Generic_Execution.shutdownExecutorService(
@@ -490,7 +467,7 @@ public class RDL_Scraper {
 
     private HashSet<Future> getResult(boolean restart)
             throws IOException {
-        HashSet<Future> result = new HashSet<Future>();
+        HashSet<Future> result = new HashSet<>();
         RDL_Run run = new RDL_Run(
                 this, restart);
         result.add(getExecutorService().submit(run));
@@ -498,10 +475,12 @@ public class RDL_Scraper {
     }
 
     /**
-     * @param addressAdditionalPropertyDetails
-     * @param tSecondPartOfPostcode
-     * @param tFirstPartOfPostcode
-     * @return number of records
+     *
+     * @param outPW
+     * @param logPW
+     * @param sharedLogPW
+     * @param useOnlyCachedFiles
+     * @return
      */
     public int writeResults(
             //int index,
@@ -513,10 +492,8 @@ public class RDL_Scraper {
         Object[] results = getAndParseDocument(index, useOnlyCachedFiles);
         outPW.write((String) results[0]);
         outPW.write((String) results[1]);
-        ArrayList<String[]> links;
-        links = (ArrayList<String[]>) results[2];
-        Iterator<String[]> ite;
-        ite = links.iterator();
+        ArrayList<String[]> links = (ArrayList<String[]>) results[2];
+        Iterator<String[]> ite = links.iterator();
         String[] linkss;
         while (ite.hasNext()) {
             linkss = ite.next();
@@ -544,7 +521,7 @@ public class RDL_Scraper {
                 ArrayList<String[]> links;
                 links = (ArrayList<String[]>) urlResult[2];
                 pw.println("<links>");
-                if (links.size() == 0) {
+                if (links.isEmpty()) {
                     pw.println("No " + s_DOIWithResolver + " links.");
                 } else {
                     Iterator<String[]> ite2;
@@ -571,9 +548,7 @@ public class RDL_Scraper {
      * @param logPW
      * @param sharedLogPW
      */
-    public static void updateLog(
-            PrintWriter logPW,
-            PrintWriter sharedLogPW) {
+    public void updateLog(PrintWriter logPW, PrintWriter sharedLogPW) {
         logPW.println("0 Records");
         sharedLogPW.println("0 Records");
         logPW.flush();
@@ -603,7 +578,7 @@ public class RDL_Scraper {
                 throw new Error(message);
             }
             return true;
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace(System.err);
         }
         return false;
@@ -636,6 +611,7 @@ public class RDL_Scraper {
 
     /**
      *
+     * @param index
      * @param useOnlyCachedFiles
      * @return Object[] result where: result[0] is a String representation of
      * the pdfFile; result[1] is a String declaring whether the pdfFile contains
@@ -643,11 +619,7 @@ public class RDL_Scraper {
      * links in the pdfFile that are explicitly marked up as links.
      */
     public Object[] getAndParseDocument(int index, boolean useOnlyCachedFiles) {
-        Object[] result;
-        result = null;
-        HttpURLConnection connection;
-        BufferedReader br;
-        String line;
+        Object[] r = null;
         File pdfFile = null;
         if (s_URL.endsWith(".pdf")) {
             pdfFile = getFile(index, "");
@@ -656,7 +628,7 @@ public class RDL_Scraper {
             if (s_URL.endsWith(".pdf")) {
                 if (pdfFile.exists()) {
                     try {
-                        result = parsePDF(pdfFile);
+                        r = parsePDF(pdfFile);
                     } catch (IOException ex) {
                         Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -666,33 +638,26 @@ public class RDL_Scraper {
             }
         } else {
             try {
-                connection = getOpenHttpURLConnection();
-                int responseCode = connection.getResponseCode();
+                HttpURLConnection c = getOpenHttpURLConnection();
+                int responseCode = c.getResponseCode();
                 if (responseCode != 200) {
                     handleNon200ResponseCodes(responseCode);
-                    return result;
+                    return r;
                 }
-                Map<String, List<String>> headerFields;
-                headerFields = connection.getHeaderFields();
+                Map<String, List<String>> headerFields = c.getHeaderFields();
                 if (!headerFields.isEmpty()) {
                     System.out.println("<HeaderFields>");
-                    Iterator<String> ite;
-                    ite = headerFields.keySet().iterator();
-                    String key;
-                    String value2;
-                    List<String> value;
+                    Iterator<String> ite = headerFields.keySet().iterator();
                     while (ite.hasNext()) {
-                        key = ite.next();
+                        String key = ite.next();
                         System.out.println("<HeaderKey>");
                         System.out.println("key " + key);
-                        value = headerFields.get(key);
+                        List<String> value = headerFields.get(key);
                         if (!value.isEmpty()) {
                             System.out.println("<HeaderValues>");
-                            Iterator<String> ite2;
-                            ite2 = value.iterator();
+                            Iterator<String> ite2 = value.iterator();
                             while (ite2.hasNext()) {
-                                value2 = ite2.next();
-                                System.out.println(value2);
+                                System.out.println(ite2.next());
                             }
                             System.out.println("</HeaderValues>");
                         }
@@ -700,21 +665,17 @@ public class RDL_Scraper {
                     }
                     System.out.println("</HeaderFields>");
                 }
-                String contentEncoding;
-                contentEncoding = connection.getContentEncoding();
+                String contentEncoding = c.getContentEncoding();
                 System.out.println("contentEncoding " + contentEncoding);
-                long contentLength;
-                contentLength = connection.getContentLengthLong();
+                long contentLength = c.getContentLengthLong();
                 System.out.println("contentLength " + contentLength);
-                String contentType;
-                contentType = connection.getContentType();
+                String contentType = c.getContentType();
                 System.out.println("contentType " + contentType);
-                Object content;
-                content = connection.getContent();
+                Object content = c.getContent();
                 System.out.println("contentClass " + content.getClass());
 
                 InputStream inputStream;
-                inputStream = connection.getInputStream();
+                inputStream = c.getInputStream();
 
                 if (contentType.equalsIgnoreCase("application/pdf")) {
                     // Store pdf
@@ -731,7 +692,7 @@ public class RDL_Scraper {
                     fos.close();
                     inputStream.close();
 
-                    result = parsePDF(pdfFile);
+                    r = parsePDF(pdfFile);
 
 //                Object[] parsedPDF;
 //                parsedPDF = ParsePDF.parseWithTika(fis);
@@ -798,11 +759,11 @@ public class RDL_Scraper {
                 //}
             } catch (ConnectException e) {
                 e.printStackTrace(System.err);
-            } catch (Exception e) {
+            } catch (IOException e) {
                 e.printStackTrace(System.err);
             }
         }
-        return result;
+        return r;
     }
 
     public void handleNon200ResponseCodes(int responseCode) {
@@ -861,15 +822,13 @@ public class RDL_Scraper {
             System.out.println(result[1]);
         }
         FileInputStream fis;
-        fis = Generic_StaticIO.getFileInputStream(pdfFile);
+        fis = env.ge.io.getFileInputStream(pdfFile);
         try {
             result[2] = RDL_ParsePDF.parseForLinks(
                     pdfFile,
                     s_UniversityOfLeedsDataCiteDOIPrefix,
                     fis);
-        } catch (TikaException ex) {
-            Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SAXException ex) {
+        } catch (TikaException | SAXException ex) {
             Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
         }
         return result;
@@ -915,7 +874,7 @@ public class RDL_Scraper {
             }
             br.close();
             //}
-        } catch (Exception e) {
+        } catch (IOException e) {
             //e.printStackTrace(System.err);
         }
         return result;
@@ -1021,7 +980,7 @@ public class RDL_Scraper {
 
     protected HashMap<Integer, HashMap<String, File>> getFiles() {
         if (files == null) {
-            files = new HashMap<Integer, HashMap<String, File>>();
+            files = new HashMap<>();
         }
         return files;
     }
@@ -1035,7 +994,7 @@ public class RDL_Scraper {
         if (filess.containsKey(index)) {
             files = filess.get(index);
         } else {
-            files = new HashMap<String, File>();
+            files = new HashMap<>();
             filess.put(index, files);
         }
         if (files.containsKey(s_URL)) {
@@ -1048,18 +1007,12 @@ public class RDL_Scraper {
             dirname = s_URL.replace(":", "_");
             dirname = dirname.replace("/", "_");
             dirname += suffix;
-            File dir = new File(
-                    RDL_Files.getDir(),
-                    "DOI_" + index);
-            dir = new File(
-                    dir,
-                    dirname);
+            File dir = new File(RDL_Files.getDir(), "DOI_" + index);
+            dir = new File(dir, dirname);
             if (!dir.exists()) {
                 dir.mkdirs();
             }
-            result = new File(
-                    dir,
-                    filename);
+            result = new File(dir, filename);
             files.put(s_URL, result);
         }
         return result;

@@ -30,29 +30,31 @@ import java.io.PrintWriter;
 import java.io.StreamTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import uk.ac.leeds.ccg.andyt.generic.io.Generic_StaticIO;
-import uk.ac.leeds.ccg.andyt.generic.lang.Generic_StaticString;
+import uk.ac.leeds.ccg.andyt.rdl.core.RDL_Environment;
+import uk.ac.leeds.ccg.andyt.rdl.io.RDL_Object;
 
 /**
  * To be extended by Run methods.
  */
-public abstract class RDL_RunAbstract implements Runnable {
+public abstract class RDL_RunAbstract extends RDL_Object implements Runnable {
 
     protected boolean restart;
     protected RDL_Scraper scraper;
     // For convenience
     protected String s_URL;
-    
+
     // Other fields
     protected File outFile;
     protected PrintWriter outPR;
     protected File logFile;
     protected PrintWriter logPR;
     protected PrintWriter sharedLogPR;
-    
-    protected void init(
-            RDL_Scraper scraper,
-            boolean restart) {
+
+    public RDL_RunAbstract(RDL_Environment env) {
+        super(env);
+    }
+
+    protected final void init(RDL_Scraper scraper, boolean restart) {
         this.scraper = scraper;
         this.s_URL = scraper.s_URL;
         this.restart = restart;
@@ -81,21 +83,17 @@ public abstract class RDL_RunAbstract implements Runnable {
         try {
             File outDirectory = scraper.getDirectory();
             outDirectory.mkdirs();
-            outFile = new File(
-                    outDirectory,
-                    filenamepart + ".csv");
-            logFile = new File(
-                    outDirectory,
-                    filenamepart + ".log");
-            //sharedLogPR = Generic_StaticIO.getPrintWriter(sharedLogFile, true);
+            outFile = new File(outDirectory, filenamepart + ".csv");
+            logFile = new File(outDirectory, filenamepart + ".log");
+            //sharedLogPR = Generic_IO.getPrintWriter(sharedLogFile, true);
             if (!logFile.exists()) {
                 logFile.createNewFile();
             }
             if (!outFile.exists()) {
                 outFile.createNewFile();
             }
-            outPR = Generic_StaticIO.getPrintWriter(outFile, restart);
-            logPR = Generic_StaticIO.getPrintWriter(logFile, restart);
+            outPR = env.ge.io.getPrintWriter(outFile, restart);
+            logPR = env.ge.io.getPrintWriter(logFile, restart);
         } catch (IOException ex) {
             System.err.println(ex.toString());
             Logger.getLogger(RDL_RunAbstract.class.getName()).log(Level.SEVERE, null, ex);
@@ -108,81 +106,51 @@ public abstract class RDL_RunAbstract implements Runnable {
      * being the first part of last postcode returned, the second part being the
      * second part of the last postcode returned.
      *
-     * @param type
      * @param filenamepart
      * @return
      */
-    protected String[] getDOIForRestart(
-            String filenamepart) {
-        String[] result = null;
+    protected String getRestartDOI(String filenamepart) {
+        String r = null;
         try {
             File outDirectory = scraper.getDirectory();
             if (!outDirectory.exists()) {
                 return null;
             }
             outDirectory.mkdirs();
-            logFile = new File(
-                    outDirectory,
-                    filenamepart + ".log");
+            logFile = new File(outDirectory, filenamepart + ".log");
             if (logFile.length() == 0L) {
                 return null;
             }
-            BufferedReader br = Generic_StaticIO.getBufferedReader(logFile);
-            StreamTokenizer st = new StreamTokenizer(br);
-            Generic_StaticIO.setStreamTokenizerSyntax1(st);
-            int token = st.nextToken();
-            String line = null;
-            while (token != StreamTokenizer.TT_EOF) {
-                switch (token) {
-                    case StreamTokenizer.TT_WORD:
-                        line = st.sval;
-                    case StreamTokenizer.TT_EOL:
-                        break;
+            String line;
+            try (BufferedReader br = env.ge.io.getBufferedReader(logFile)) {
+                StreamTokenizer st = new StreamTokenizer(br);
+                env.ge.io.setStreamTokenizerSyntax1(st);
+                int token = st.nextToken();
+                line = null;
+                while (token != StreamTokenizer.TT_EOF) {
+                    switch (token) {
+                        case StreamTokenizer.TT_WORD:
+                            line = st.sval;
+                        case StreamTokenizer.TT_EOL:
+                            break;
+                    }
+                    token = st.nextToken();
                 }
-                token = st.nextToken();
             }
-            br.close();
-            String[] fields = null;
-            if (line != null) {
-                fields = line.split(" ");
-            }
-            result = new String[2];
-            if (fields[0].startsWith("number")) {
-                return result;
-            } else {
-                result = new String[2];
-                result[0] = Generic_StaticString.getLowerCase(fields[0]);
-                result[1] = Generic_StaticString.getLowerCase(fields[1]);
-                /**
-                 * fields[0] contains a valid first part of a postcode and
-                 * fields[1] contains a valid second part of a postcode
-                 */
-            }
+            return line;
         } catch (IOException ex) {
             Logger.getLogger(RDL_RunAbstract.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return result;
+        return r;
     }
 
-    protected String getReportString(
-            int counter,
-            int numberOfHousepriceRecords,
-            int numberOfPostcodesWithHousepriceRecords) {
-        return "Attempted " + counter
-                + ", Number Of Houseprice Records " + numberOfHousepriceRecords
-                + ", Number Of Postcodes With Houseprice Records " + numberOfPostcodesWithHousepriceRecords;
-    }
-
-    protected void finalise(
-            int counter,
-            int numberOfDOIRecords,
-            int numberOfDOIRecordsWithLinkBackPublications) {
+    protected void finalise(int counter, int nDOI, int nDOIWithLinkBackPublications) {
         // Final reporting
         System.out.println("Attempted " + counter);
-        logPR.println("numberOfDOIRecords " + numberOfDOIRecords);
-        System.out.println("numberOfDOIRecords " + numberOfDOIRecords);
-        logPR.println("numberOfDOIRecordsWithLinkBackPublications " + numberOfDOIRecordsWithLinkBackPublications);
-        System.out.println("numberOfDOIRecordsWithLinkBackPublications " + numberOfDOIRecordsWithLinkBackPublications);
+        logPR.println("numberOfDOIRecords " + nDOI);
+        System.out.println("numberOfDOIRecords " + nDOI);
+        logPR.println("numberOfDOIRecordsWithLinkBackPublications " + nDOIWithLinkBackPublications);
+        System.out.println("numberOfDOIRecordsWithLinkBackPublications " + nDOIWithLinkBackPublications);
         outPR.close();
         logPR.close();
     }

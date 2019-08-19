@@ -23,14 +23,10 @@
  */
 package uk.ac.leeds.ccg.andyt.rdl.web;
 
-import java.util.Iterator;
-import java.util.TreeSet;
-
 public class RDL_Run extends RDL_RunAbstract {
 
-    public RDL_Run(
-            RDL_Scraper s,
-            boolean restart) {
+    public RDL_Run(RDL_Scraper s, boolean restart) {
+        super(s.env);
         init(s, restart);
     }
 
@@ -41,21 +37,19 @@ public class RDL_Run extends RDL_RunAbstract {
         } else {
             // Initialise output files
             String filenamepart = "f";
-            String[] DOIForRestart = getDOIForRestart(filenamepart);
-            if (DOIForRestart == null) {
+            String restartDOI = getRestartDOI(filenamepart);
+            if (restartDOI == null) {
                 formatNew();
-            } else if (DOIForRestart[0] != null) {
-                String a0Restart = DOIForRestart[0].substring(0, 1);
+            } else {
                 initialiseOutputs(filenamepart);
                 // Process
                 int n0;
-                int _int0;
+                int i;
                 int counter = 0;
-                int numberOfHousepriceRecords = 0;
-                int numberOfPostcodesWithHousepriceRecords = 0;
+                int nDOI = 0;
+                int nDOIWithLinkBackPublications = 0;
                 boolean a0Restarter = false;
                 boolean n0Restarter = false;
-                boolean secondPartPostcodeRestarter = false;
                 if (!a0Restarter) {
 //                            if (a0.equalsIgnoreCase(a0Restart)) {
 //                                a0Restarter = true;
@@ -71,30 +65,21 @@ public class RDL_Run extends RDL_RunAbstract {
                         } else {
                             checkRequestRate();
                             if (scraper.isReturningOutcode()) {
-                                _int0 = scraper.writeResults(
-                                        outPR,
-                                        logPR,
-                                        sharedLogPR,
-                                        scraper.useOnlyCachedFiles);
+                                i = scraper.writeResults(outPR, logPR,
+                                        sharedLogPR, scraper.useOnlyCachedFiles);
                                 counter++;
-                                numberOfHousepriceRecords += _int0;
-                                if (_int0 > 0) {
-                                    numberOfPostcodesWithHousepriceRecords++;
+                                nDOI += i;
+                                if (i > 0) {
+                                    nDOIWithLinkBackPublications++;
                                 }
                             } else {
-                                RDL_Scraper.updateLog(
-                                        logPR,
-                                        sharedLogPR);
+                                scraper.updateLog(logPR, sharedLogPR);
                             }
                         }
                     }
                 }
-//                        System.out.println(getReportString(
-//                                counter,
-//                                numberOfHousepriceRecords,
-//                                numberOfPostcodesWithHousepriceRecords));
                 // Final reporting
-                finalise(counter, numberOfHousepriceRecords, numberOfPostcodesWithHousepriceRecords);
+                finalise(counter, nDOI, nDOIWithLinkBackPublications);
             }
         }
     }
@@ -105,34 +90,24 @@ public class RDL_Run extends RDL_RunAbstract {
         initialiseOutputs(filenamepart);
         // Process
         int n0;
-        int _int0;
+        int i;
         int counter = 0;
         int numberOfDOIRecords = 0;
-        int numberOfDOIRecordsWithLinkBackPublications = 0;
+        int nDOIWithLinkBackPublications = 0;
         for (n0 = 0; n0 < 10; n0++) {
             checkRequestRate();
             if (scraper.isReturningOutcode()) {
-                _int0 = scraper.writeResults(
-                        outPR,
-                        logPR,
-                        sharedLogPR,
-                        scraper.useOnlyCachedFiles);
+                i = scraper.writeResults(outPR, logPR, sharedLogPR, scraper.useOnlyCachedFiles);
                 counter++;
-                numberOfDOIRecords += _int0;
-                if (_int0 > 0) {
-                    numberOfDOIRecordsWithLinkBackPublications++;
+                numberOfDOIRecords += i;
+                if (i > 0) {
+                    nDOIWithLinkBackPublications++;
                 }
             } else {
-                scraper.updateLog(
-                        logPR,
-                        sharedLogPR);
+                scraper.updateLog(logPR, sharedLogPR);
             }
-//            System.out.println(getReportString(
-//                    counter,
-//                    numberOfHousepriceRecords,
-//                    numberOfPostcodesWithHousepriceRecords));
         }
         // Final reporting
-        finalise(counter, numberOfDOIRecords, numberOfDOIRecordsWithLinkBackPublications);
+        finalise(counter, numberOfDOIRecords, nDOIWithLinkBackPublications);
     }
 }
