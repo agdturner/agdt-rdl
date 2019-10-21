@@ -104,12 +104,16 @@ public class RDL_Scraper extends RDL_Object {
      * @param args
      */
     public static void main(String[] args) {
-        if (args.length == 0) {
-            args = new String[1];
-            // Defaults output directory.
-            args[0] = "C:/Users/geoagdt/src/agdt/java/projects/agdt-java-project-ResearchDataLeeds/data";
+        try {
+            if (args.length == 0) {
+                args = new String[1];
+                // Defaults output directory.
+                args[0] = "C:/Users/geoagdt/src/agdt/java/projects/agdt-java-project-ResearchDataLeeds/data";
+            }
+            new RDL_Scraper(new RDL_Environment(new Generic_Environment())).run(args);
+        } catch (IOException ex) {
+            ex.printStackTrace(System.err);
         }
-        new RDL_Scraper(new RDL_Environment(new Generic_Environment())).run(args);
     }
 
     public long getTimeRunningMillis() {
@@ -145,7 +149,7 @@ public class RDL_Scraper extends RDL_Object {
      *
      * @param args
      */
-    public void run(String[] args) {
+    public void run(String[] args) throws IOException {
         startTime = System.currentTimeMillis();
         double permittedConnectionsPerHour = 20000;
         permittedConnectionRate = permittedConnectionsPerHour / Generic_Time.MilliSecondsInHour;
@@ -159,20 +163,7 @@ public class RDL_Scraper extends RDL_Object {
         }
         getSharedLogFile().deleteOnExit();
         directory = new File(args[0]);
-        File mainOutputDir;
-        mainOutputDir = new File(directory, "out");
-        RDL_Files.setDir(mainOutputDir);
-        mainOutputDir = new File(directory, "logs");
-        if (!mainOutputDir.exists()) {
-            mainOutputDir.mkdirs();
-            mainOutputDir = env.ge.io.initialiseArchive(mainOutputDir, 10);
-        } else {
-            mainOutputDir = env.ge.io.addToArchive(mainOutputDir, 10);
-        }
-        File mainOutputFile;
-        mainOutputFile = new File(mainOutputDir, "log.txt");
-
-        pwOut = env.ge.io.getPrintWriter(mainOutputFile, false);
+        File mainOutputDir = new File(directory, "out");
         s_HipertyTipperty = "http://";
         s_Resolver = "doi.org";
         s_UniversityOfLeedsDataCiteDOIPrefix = "10.5518";
@@ -215,7 +206,7 @@ public class RDL_Scraper extends RDL_Object {
         pwOut.close();
     }
 
-    public void initOutputAndLogFiles(String[] args) {
+    public void initOutputAndLogFiles(String[] args) throws IOException {
         sharedLogFile = new File(args[0], "log");
         try {
             getSharedLogFile().createNewFile();
@@ -224,27 +215,26 @@ public class RDL_Scraper extends RDL_Object {
         }
         getSharedLogFile().deleteOnExit();
         directory = new File(args[0]);
-        File mainOutputDir;
-        mainOutputDir = new File(directory, "out");
-        RDL_Files.setDir(mainOutputDir);
-        mainOutputDir = new File(directory, "logs");
-        if (!mainOutputDir.exists()) {
-            mainOutputDir.mkdirs();
+        File outD = new File(directory, "out");
+        RDL_Files.setDir(outD);
+        outD = new File(directory, "logs");
+        if (!outD.exists()) {
+            outD.mkdirs();
+            outD = env.ge.io.initialiseArchive(outD, 10, false);
+        } else {
+            outD = env.ge.io.initialiseArchive(outD, 10, true);
+            outD = env.ge.io.addToArchive(outD, 10);
         }
-        mainOutputDir = env.ge.io.initialiseArchive(mainOutputDir, 10);
-        if (!mainOutputDir.exists()) {
-            mainOutputDir.mkdirs();
+        if (!outD.exists()) {
+            outD.mkdirs();
         }
-        File mainOutputFile;
-        mainOutputFile = new File(
-                mainOutputDir,
-                "log.txt");
+        File outF = new File(                outD,                "log.txt");
         try {
-            mainOutputFile.createNewFile();
+            outF.createNewFile();
         } catch (IOException ex) {
             Logger.getLogger(RDL_Scraper.class.getName()).log(Level.SEVERE, null, ex);
         }
-        pwOut = env.ge.io.getPrintWriter(mainOutputFile, false);
+        pwOut = env.ge.io.getPrintWriter(outF, false);
     }
 
     public void runTest(int index, boolean useOnlyCachedFiles) {
@@ -285,7 +275,7 @@ public class RDL_Scraper extends RDL_Object {
                 //s_URL = "https://www.google.co.uk/webhp?sourceid=chrome-instant&ion=1&espv=2&ie=UTF-8#q=%22doi.org%2F" + s_UniversityOfLeedsDataCiteDOIPrefix + "%2F" + s_DOISuffix + "%22";
                 search = "\"" + s_DOIWithResolver + "\"";
 
-                try (PrintWriter pw = getResultsPrintWriter(index)) {
+                try ( PrintWriter pw = getResultsPrintWriter(index)) {
                     HashMap<String, String> searchResult;
                     searchResult = getSearchResult();
                     if (!searchResult.isEmpty()) {
@@ -396,7 +386,7 @@ public class RDL_Scraper extends RDL_Object {
             String url = google + URLEncoder.encode(search, charset);
             System.out.println(url);
             Document doc = Jsoup.connect(url).userAgent(userAgent).get();
-            
+
             System.out.println(doc.toString());
             //r = doc.select(".g>.r>a");
             r = doc.select("a[href]");
@@ -793,9 +783,9 @@ public class RDL_Scraper extends RDL_Object {
      * @return Object[] r where:
      * <ul>
      * <li>r[0] is a String representation of the pdfFile</li>
-     * <li>r[1] is a String declaring whether the pdfFile contains
-     * s_DOI; result[2] is an ArrayList<String[]> containing details of the
-     * links in the pdfFile that are explicitly marked up as links.
+     * <li>r[1] is a String declaring whether the pdfFile contains s_DOI;
+     * result[2] is an ArrayList<String[]> containing details of the links in
+     * the pdfFile that are explicitly marked up as links.
      * @throws FileNotFoundException
      * @throws IOException
      */

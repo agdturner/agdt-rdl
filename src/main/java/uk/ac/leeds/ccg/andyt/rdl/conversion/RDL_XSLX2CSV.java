@@ -25,7 +25,6 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import uk.ac.leeds.ccg.andyt.generic.core.Generic_Environment;
-import uk.ac.leeds.ccg.andyt.generic.io.Generic_IO;
 import uk.ac.leeds.ccg.andyt.rdl.core.RDL_Environment;
 import uk.ac.leeds.ccg.andyt.rdl.io.RDL_Object;
 
@@ -34,7 +33,7 @@ import uk.ac.leeds.ccg.andyt.rdl.io.RDL_Object;
  * http://svn.apache.org/repos/asf/poi/trunk/src/examples/src/org/apache/poi/ss/examples/ToCSV.java
  * Demonstrates <em>one</em> way to convert an Excel spreadsheet into a CSV
  * file. This class makes the following assumptions;
- * <list>
+ * <ul>
  * <li>1. Where the Excel workbook contains more that one worksheet, then a
  * single CSV file will contain the data from all of the worksheets.</li>
  * <li>2. The data matrix contained in the CSV file will be square. This means
@@ -45,7 +44,7 @@ import uk.ac.leeds.ccg.andyt.rdl.io.RDL_Object;
  * <li>3. Empty fields will represent missing cells.</li>
  * <li>4. A record consisting of empty fields will be used to represent an empty
  * row in the Excel workbook.</li>
- * </list>
+ * </ul>
  * Therefore, if the worksheet looked like this;
  *
  * <pre>
@@ -136,7 +135,7 @@ public class RDL_XSLX2CSV extends RDL_Object {
     private static final String CSV_FILE_EXTENSION = ".csv";
     private static final String DEFAULT_SEPARATOR = ",";
 
-    public RDL_XSLX2CSV(){
+    public RDL_XSLX2CSV() throws IOException {
         this(new RDL_Environment(new Generic_Environment()));
     }
     
@@ -644,8 +643,12 @@ public class RDL_XSLX2CSV extends RDL_Object {
      * when running the program from the command prompt.
      */
     public static void main(String[] args) {
+        try {
         RDL_Environment env = new RDL_Environment(new Generic_Environment());
         new RDL_XSLX2CSV(env).run(args);
+        } catch (IOException ex) {
+            ex.printStackTrace(System.err);
+        }
     }
 
     /**
