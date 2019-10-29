@@ -44,8 +44,14 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!--<maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>-->
         <agdt-java-generic.version>1.0-SNAPSHOT</agdt-java-generic.version>
+        <maven.compiler.source>12</maven.compiler.source>
+        <maven.compiler.target>12</maven.compiler.target>
+        <!--
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        -->
     </properties>
     
     <dependencies>
