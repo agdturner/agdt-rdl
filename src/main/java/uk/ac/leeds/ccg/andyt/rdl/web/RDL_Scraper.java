@@ -71,6 +71,8 @@ public class RDL_Scraper extends RDL_Object {
 
     File directory;
     static File sharedLogFile;
+    
+    protected final Generic_Execution exec;
 
     boolean useOnlyCachedFiles;
     String s_filter;
@@ -97,6 +99,7 @@ public class RDL_Scraper extends RDL_Object {
 
     public RDL_Scraper(RDL_Environment env) {
         super(env);
+        exec = new Generic_Execution(env.ge);
     }
 
     /**
@@ -295,7 +298,7 @@ public class RDL_Scraper extends RDL_Object {
         }
     }
 
-    protected PrintWriter getResultsPrintWriter(int index) {
+    protected PrintWriter getResultsPrintWriter(int index) throws IOException {
         PrintWriter r;
         File dir = new File(RDL_Files.getDir(), "DOI_" + index);
         if (!dir.exists()) {
@@ -421,7 +424,7 @@ public class RDL_Scraper extends RDL_Object {
         HashSet<Future> futures = new HashSet<>();
         futures.addAll(getResult(restart));
         // Wait for results then shutdown executorService
-        Generic_Execution.shutdownExecutorService(
+        exec.shutdownExecutorService(
                 getExecutorService(),
                 futures,
                 this,
@@ -444,7 +447,7 @@ public class RDL_Scraper extends RDL_Object {
         executorService = Executors.newFixedThreadPool(nThreads);
         HashSet<Future> futures = getResult(restart);
         // Wait for results then shutdown executorService
-        Generic_Execution.shutdownExecutorService(
+        exec.shutdownExecutorService(
                 getExecutorService(),
                 futures,
                 this,
